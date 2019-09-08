@@ -1,0 +1,7 @@
+## Interface: 11302
+## Title: personalFinanceHelper
+## Author: Gaute_Nybo
+## Version: 0.1
+minAddon.lua
+
+
