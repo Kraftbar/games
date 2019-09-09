@@ -17,7 +17,7 @@ end
 
 ---------------------------------
 -- Project Code Below
----------------------------------   
+---------------------------------      
 local UIConfig = CreateFrame("Frame", "MUI_BuffFrame", UIParent, "BasicFrameTemplateWithInset");
 UIConfig:SetSize(260, 360);
 UIConfig:SetPoint("CENTER"); -- Doesn't need to be ("CENTER", UIParent, "CENTER")
