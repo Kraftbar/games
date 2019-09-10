@@ -1,0 +1,10 @@
+## Interface: 11302
+## Title: QuickLayer
+## Version: 5
+## Notes: Auto invite for quick and easy layer swaps. /l, /layer
+## DefaultState: enabled
+## Author: Retherz
+## SavedVariablesPerCharacter: QuickLayer
+
+QuickLayer_Options.lua
+QuickLayer.lua
