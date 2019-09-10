@@ -18,18 +18,18 @@ end
 ---------------------------------
 -- Project Code Below
 ---------------------------------      
-local UIConfig = CreateFrame("Frame", "MUI_BuffFrame", UIParent, "BasicFrameTemplateWithInset");
-UIConfig:SetSize(260, 360);
-UIConfig:SetPoint("CENTER"); -- Doesn't need to be ("CENTER", UIParent, "CENTER")
+local AutoBeggar = CreateFrame("Frame", "MUI_BuffFrame", UIParent, "BasicFrameTemplateWithInset");
+AutoBeggar:SetSize(260, 360);
+AutoBeggar:SetPoint("CENTER"); -- Doesn't need to be ("CENTER", UIParent, "CENTER")
 
-UIConfig:SetMovable(true)
-UIConfig:EnableMouse(true)
-UIConfig:RegisterForDrag("LeftButton")
+AutoBeggar:SetMovable(true)
+AutoBeggar:EnableMouse(true)
+AutoBeggar:RegisterForDrag("LeftButton")
 
-UIConfig.title = UIConfig:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
-UIConfig.title:SetPoint("LEFT", UIConfig.TitleBg, "LEFT", 5, 0);
-UIConfig.title:SetText("Personal Finance Helper");
---UIConfig.title:SetFont("Fonts\\FRIZQT__.ttf", 11, "OUTLINE");
+AutoBeggar.title = AutoBeggar:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
+AutoBeggar.title:SetPoint("LEFT", AutoBeggar.TitleBg, "LEFT", 5, 0);
+AutoBeggar.title:SetText("Personal Finance Helper");
+--AutoBeggar.title:SetFont("Fonts\\FRIZQT__.ttf", 11, "OUTLINE");
 
 
 
@@ -38,11 +38,11 @@ UIConfig.title:SetText("Personal Finance Helper");
 -- Enables movable 
 ---------------------------------
 local frame = CreateFrame("Frame", "DragFrame2", UIParent)
-UIConfig:SetMovable(true)
-UIConfig:EnableMouse(true)
-UIConfig:RegisterForDrag("LeftButton")
-UIConfig:SetScript("OnDragStart", UIConfig.StartMoving)
-UIConfig:SetScript("OnDragStop", UIConfig.StopMovingOrSizing)
+AutoBeggar:SetMovable(true)
+AutoBeggar:EnableMouse(true)
+AutoBeggar:RegisterForDrag("LeftButton")
+AutoBeggar:SetScript("OnDragStart", AutoBeggar.StartMoving)
+AutoBeggar:SetScript("OnDragStop", AutoBeggar.StopMovingOrSizing)
 
 
 
@@ -51,61 +51,61 @@ UIConfig:SetScript("OnDragStop", UIConfig.StopMovingOrSizing)
 -- Buttons
 ---------------------------------
 -- Save Button:
-UIConfig.saveBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
-UIConfig.saveBtn:SetPoint("CENTER", UIConfig, "TOP", 0, -70);
-UIConfig.saveBtn:SetSize(100, 20);
-UIConfig.saveBtn:SetText("Save");
-UIConfig.saveBtn:SetNormalFontObject("GameFontNormal");
-UIConfig.saveBtn:SetHighlightFontObject("GameFontHighlight");
+AutoBeggar.saveBtn = CreateFrame("Button", nil, AutoBeggar, "GameMenuButtonTemplate");
+AutoBeggar.saveBtn:SetPoint("CENTER", AutoBeggar, "TOP", 0, -70);
+AutoBeggar.saveBtn:SetSize(100, 20);
+AutoBeggar.saveBtn:SetText("Save");
+AutoBeggar.saveBtn:SetNormalFontObject("GameFontNormal");
+AutoBeggar.saveBtn:SetHighlightFontObject("GameFontHighlight");
 
---UIConfig.saveBtn:SetPushedFontObject(""); -- removed from API
---UIConfig.saveBtn:SetDisabledFontObject(" "); -- requires a name (cannot be empty!)
+--AutoBeggar.saveBtn:SetPushedFontObject(""); -- removed from API
+--AutoBeggar.saveBtn:SetDisabledFontObject(" "); -- requires a name (cannot be empty!)
 
 -- Reset Button:
-UIConfig.resetBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
-UIConfig.resetBtn:SetPoint("TOP", UIConfig.saveBtn, "BOTTOM", 0, -10);
-UIConfig.resetBtn:SetSize(140, 40);
-UIConfig.resetBtn:SetText("Reset");
-UIConfig.resetBtn:SetNormalFontObject("GameFontNormal");
-UIConfig.resetBtn:SetHighlightFontObject("GameFontHighlight");
+AutoBeggar.resetBtn = CreateFrame("Button", nil, AutoBeggar, "GameMenuButtonTemplate");
+AutoBeggar.resetBtn:SetPoint("TOP", AutoBeggar.saveBtn, "BOTTOM", 0, -10);
+AutoBeggar.resetBtn:SetSize(140, 40);
+AutoBeggar.resetBtn:SetText("Reset");
+AutoBeggar.resetBtn:SetNormalFontObject("GameFontNormal");
+AutoBeggar.resetBtn:SetHighlightFontObject("GameFontHighlight");
 
 -- Load Button:
-UIConfig.loadBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
-UIConfig.loadBtn:SetPoint("TOP", UIConfig.resetBtn, "BOTTOM", 0, -10);
-UIConfig.loadBtn:SetSize(140, 40);
-UIConfig.loadBtn:SetText("Load");
-UIConfig.loadBtn:SetNormalFontObject("GameFontNormalLarge");
-UIConfig.loadBtn:SetHighlightFontObject("GameFontHighlightLarge");
+AutoBeggar.loadBtn = CreateFrame("Button", nil, AutoBeggar, "GameMenuButtonTemplate");
+AutoBeggar.loadBtn:SetPoint("TOP", AutoBeggar.resetBtn, "BOTTOM", 0, -10);
+AutoBeggar.loadBtn:SetSize(140, 40);
+AutoBeggar.loadBtn:SetText("Load");
+AutoBeggar.loadBtn:SetNormalFontObject("GameFontNormalLarge");
+AutoBeggar.loadBtn:SetHighlightFontObject("GameFontHighlightLarge");
 
 ---------------------------------
 -- Sliders
 ---------------------------------
 -- Slider 1:
-UIConfig.slider1 = CreateFrame("SLIDER", nil, UIConfig, "OptionsSliderTemplate");
-UIConfig.slider1:SetPoint("TOP", UIConfig.loadBtn, "BOTTOM", 0, -20);
-UIConfig.slider1:SetMinMaxValues(1, 100);
-UIConfig.slider1:SetValue(50);
-UIConfig.slider1:SetValueStep(30);
-UIConfig.slider1:SetObeyStepOnDrag(true);
+AutoBeggar.slider1 = CreateFrame("SLIDER", nil, AutoBeggar, "OptionsSliderTemplate");
+AutoBeggar.slider1:SetPoint("TOP", AutoBeggar.loadBtn, "BOTTOM", 0, -20);
+AutoBeggar.slider1:SetMinMaxValues(1, 100);
+AutoBeggar.slider1:SetValue(50);
+AutoBeggar.slider1:SetValueStep(30);
+AutoBeggar.slider1:SetObeyStepOnDrag(true);
 
 -- Slider 2:
-UIConfig.slider2 = CreateFrame("SLIDER", nil, UIConfig, "OptionsSliderTemplate");
-UIConfig.slider2:SetPoint("TOP", UIConfig.slider1, "BOTTOM", 0, -20);
-UIConfig.slider2:SetMinMaxValues(1, 100);
-UIConfig.slider2:SetValue(40);
-UIConfig.slider2:SetValueStep(30);
-UIConfig.slider2:SetObeyStepOnDrag(true);
+AutoBeggar.slider2 = CreateFrame("SLIDER", nil, AutoBeggar, "OptionsSliderTemplate");
+AutoBeggar.slider2:SetPoint("TOP", AutoBeggar.slider1, "BOTTOM", 0, -20);
+AutoBeggar.slider2:SetMinMaxValues(1, 100);
+AutoBeggar.slider2:SetValue(40);
+AutoBeggar.slider2:SetValueStep(30);
+AutoBeggar.slider2:SetObeyStepOnDrag(true);
 
 ---------------------------------
 -- Check Buttons
 ---------------------------------
 -- Check Button 1:
-UIConfig.checkBtn1 = CreateFrame("CheckButton", nil, UIConfig, "UICheckButtonTemplate");
-UIConfig.checkBtn1:SetPoint("TOPLEFT", UIConfig.slider1, "BOTTOMLEFT", -10, -40);
-UIConfig.checkBtn1.text:SetText("My Check Button!");
+AutoBeggar.checkBtn1 = CreateFrame("CheckButton", nil, AutoBeggar, "UICheckButtonTemplate");
+AutoBeggar.checkBtn1:SetPoint("TOPLEFT", AutoBeggar.slider1, "BOTTOMLEFT", -10, -40);
+AutoBeggar.checkBtn1.text:SetText("My Check Button!");
 
 -- Check Button 2:
-UIConfig.checkBtn2 = CreateFrame("CheckButton", nil, UIConfig, "UICheckButtonTemplate");
-UIConfig.checkBtn2:SetPoint("TOPLEFT", UIConfig.checkBtn1, "BOTTOMLEFT", 0, -10);
-UIConfig.checkBtn2.text:SetText("Another Check Button!");
-UIConfig.checkBtn2:SetChecked(true);
+AutoBeggar.checkBtn2 = CreateFrame("CheckButton", nil, AutoBeggar, "UICheckButtonTemplate");
+AutoBeggar.checkBtn2:SetPoint("TOPLEFT", AutoBeggar.checkBtn1, "BOTTOMLEFT", 0, -10);
+AutoBeggar.checkBtn2.text:SetText("Another Check Button!");
+AutoBeggar.checkBtn2:SetChecked(true);
