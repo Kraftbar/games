@@ -1,89 +1,111 @@
-AutoBiographer_DebugWindow = nil
-AutoBiographer_EventWindow = nil
-AutoBiographer_MainWindow = nil
+---------------------------------
+-- Helpful Dev Code
+---------------------------------
+SLASH_RELOADUI1 = "/rl"; -- new slash command for reloading UI
+SlashCmdList.RELOADUI = ReloadUI;
 
-local Controller = AutoBiographer_Controller
-
-function Toggle_DebugWindow()
-  if (not AutoBiographer_DebugWindow) then
-  
-    local debugLogs = Controller:GetLogs()
-    
-    --parent frame 
-    local frame = CreateFrame("Frame", "AutoBiographerDebug", AutoBiographer_MainWindow, "BasicFrameTemplateWithInset") 
-    frame:SetSize(750, 650) 
-    frame:SetPoint("CENTER") 
-    
-    frame:SetScript("OnHide", 
-      function(self)
-        AutoBiographer_DebugWindow = nil 
-      end
-    )
-
-    frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    frame.title:SetPoint("LEFT", frame.TitleBg, "LEFT", 5, 0);
-    frame.title:SetText("AutoBiographer Debug Window")
-    
-    --scrollframe 
-    local scrollframe = CreateFrame("ScrollFrame", nil, frame) 
-    scrollframe:SetPoint("TOPLEFT", 10, -25) 
-    scrollframe:SetPoint("BOTTOMRIGHT", -10, 10) 
-    scrollframe:SetBackdrop( { 
-      bgFile = "Interface/FrameGeneral/UI-Background-Marble", 
-      edgeFile = nil, tile = false, tileSize = 0, edgeSize = 0, 
-      insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    });
-
-    --scrollbar 
-    local scrollbar = CreateFrame("Slider", nil, scrollframe, "UIPanelScrollBarTemplate") 
-    scrollbar:SetPoint("TOPLEFT", frame, "TOPRIGHT", 4, -16) 
-    scrollbar:SetPoint("BOTTOMLEFT", frame, "BOTTOMRIGHT", 4, 16)
-    scrollbar:SetMinMaxValues(1, (#debugLogs * 20) + 20) 
-    scrollbar:SetValueStep(1) 
-    scrollbar.scrollStep = 1 
-    scrollbar:SetValue(0) 
-    scrollbar:SetWidth(16) 
-    scrollbar:SetScript("OnValueChanged",
-      function (self, value) 
-        self:GetParent():SetVerticalScroll(value) 
-      end
-    )
-    local scrollbg = scrollbar:CreateTexture(nil, "BACKGROUND") 
-    scrollbg:SetAllPoints(scrollbar) 
-    scrollbg:SetTexture(0, 0, 0, 0.4) 
-    frame.scrollbar = scrollbar 
-
-    --content frame 
-    local content = CreateFrame("Frame", nil, scrollframe) 
-    content:SetSize(1, 1) 
-    
-    --texts
-    local index = 0
-    for i = #debugLogs, 1, -1 do
-      local font = "GameFontWhite"
-      if (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Verbose) then font = "GameFontDisable"
-      elseif (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Debug) then font = "GameFontDisable"
-      elseif (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Information) then font = "GameFontWhite"
-      elseif (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Warning) then font = "GameFontNormal"
-      elseif (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Error) then font = "GameFontRed"
-      elseif (debugLogs[i].Level == AutoBiographerEnum.LogLevel.Fatal) then font = "GameFontRed"
-      end
-      
-      local text = content:CreateFontString(nil, "OVERLAY", font)
-      text:SetPoint("TOPLEFT", 5, -15 * index) 
-      text:SetText(debugLogs[i].Text)
-      index = index + 1
-    end
-    
-    scrollframe.content = content
-    scrollframe:SetScrollChild(content)
-    
-    frame.LogsUpdated = function () return end
-    
-    AutoBiographer_DebugWindow = frame
-  else
-    AutoBiographer_DebugWindow:Hide()
-    AutoBiographer_DebugWindow = nil
-  end
+SLASH_FRAMESTK1 = "/fs"; -- new slash command for showing framestack tool
+SlashCmdList.FRAMESTK = function()
+	LoadAddOn("Blizzard_DebugTools");
+	FrameStackTooltip_Toggle();
 end
 
+-- allows using left and right buttons to move through the chat 'edit' box
+for i = 1, NUM_CHAT_WINDOWS do
+	_G["ChatFrame"..i.."EditBox"]:SetAltArrowKeyMode(false);
+end
+
+---------------------------------
+-- Project Code Below
+---------------------------------      
+local UIConfig = CreateFrame("Frame", "MUI_BuffFrame", UIParent, "BasicFrameTemplateWithInset");
+UIConfig:SetSize(260, 360);
+UIConfig:SetPoint("CENTER"); -- Doesn't need to be ("CENTER", UIParent, "CENTER")
+
+UIConfig:SetMovable(true)
+UIConfig:EnableMouse(true)
+UIConfig:RegisterForDrag("LeftButton")
+
+UIConfig.title = UIConfig:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
+UIConfig.title:SetPoint("LEFT", UIConfig.TitleBg, "LEFT", 5, 0);
+UIConfig.title:SetText("Personal Finance Helper");
+--UIConfig.title:SetFont("Fonts\\FRIZQT__.ttf", 11, "OUTLINE");
+
+
+
+
+---------------------------------
+-- Enables movable 
+---------------------------------
+local frame = CreateFrame("Frame", "DragFrame2", UIParent)
+UIConfig:SetMovable(true)
+UIConfig:EnableMouse(true)
+UIConfig:RegisterForDrag("LeftButton")
+UIConfig:SetScript("OnDragStart", UIConfig.StartMoving)
+UIConfig:SetScript("OnDragStop", UIConfig.StopMovingOrSizing)
+
+
+
+
+---------------------------------
+-- Buttons
+---------------------------------
+-- Save Button:
+UIConfig.saveBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
+UIConfig.saveBtn:SetPoint("CENTER", UIConfig, "TOP", 0, -70);
+UIConfig.saveBtn:SetSize(100, 20);
+UIConfig.saveBtn:SetText("Save");
+UIConfig.saveBtn:SetNormalFontObject("GameFontNormal");
+UIConfig.saveBtn:SetHighlightFontObject("GameFontHighlight");
+
+--UIConfig.saveBtn:SetPushedFontObject(""); -- removed from API
+--UIConfig.saveBtn:SetDisabledFontObject(" "); -- requires a name (cannot be empty!)
+
+-- Reset Button:
+UIConfig.resetBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
+UIConfig.resetBtn:SetPoint("TOP", UIConfig.saveBtn, "BOTTOM", 0, -10);
+UIConfig.resetBtn:SetSize(140, 40);
+UIConfig.resetBtn:SetText("Reset");
+UIConfig.resetBtn:SetNormalFontObject("GameFontNormal");
+UIConfig.resetBtn:SetHighlightFontObject("GameFontHighlight");
+
+-- Load Button:
+UIConfig.loadBtn = CreateFrame("Button", nil, UIConfig, "GameMenuButtonTemplate");
+UIConfig.loadBtn:SetPoint("TOP", UIConfig.resetBtn, "BOTTOM", 0, -10);
+UIConfig.loadBtn:SetSize(140, 40);
+UIConfig.loadBtn:SetText("Load");
+UIConfig.loadBtn:SetNormalFontObject("GameFontNormalLarge");
+UIConfig.loadBtn:SetHighlightFontObject("GameFontHighlightLarge");
+
+---------------------------------
+-- Sliders
+---------------------------------
+-- Slider 1:
+UIConfig.slider1 = CreateFrame("SLIDER", nil, UIConfig, "OptionsSliderTemplate");
+UIConfig.slider1:SetPoint("TOP", UIConfig.loadBtn, "BOTTOM", 0, -20);
+UIConfig.slider1:SetMinMaxValues(1, 100);
+UIConfig.slider1:SetValue(50);
+UIConfig.slider1:SetValueStep(30);
+UIConfig.slider1:SetObeyStepOnDrag(true);
+
+-- Slider 2:
+UIConfig.slider2 = CreateFrame("SLIDER", nil, UIConfig, "OptionsSliderTemplate");
+UIConfig.slider2:SetPoint("TOP", UIConfig.slider1, "BOTTOM", 0, -20);
+UIConfig.slider2:SetMinMaxValues(1, 100);
+UIConfig.slider2:SetValue(40);
+UIConfig.slider2:SetValueStep(30);
+UIConfig.slider2:SetObeyStepOnDrag(true);
+
+---------------------------------
+-- Check Buttons
+---------------------------------
+-- Check Button 1:
+UIConfig.checkBtn1 = CreateFrame("CheckButton", nil, UIConfig, "UICheckButtonTemplate");
+UIConfig.checkBtn1:SetPoint("TOPLEFT", UIConfig.slider1, "BOTTOMLEFT", -10, -40);
+UIConfig.checkBtn1.text:SetText("My Check Button!");
+
+-- Check Button 2:
+UIConfig.checkBtn2 = CreateFrame("CheckButton", nil, UIConfig, "UICheckButtonTemplate");
+UIConfig.checkBtn2:SetPoint("TOPLEFT", UIConfig.checkBtn1, "BOTTOMLEFT", 0, -10);
+UIConfig.checkBtn2.text:SetText("Another Check Button!");
+UIConfig.checkBtn2:SetChecked(true);
