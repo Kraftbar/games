@@ -15,6 +15,9 @@ for i = 1, NUM_CHAT_WINDOWS do
 	_G["ChatFrame"..i.."EditBox"]:SetAltArrowKeyMode(false);
 end
 
+
+
+
 ---------------------------------
 -- Project Code Below
 ---------------------------------      
@@ -116,7 +119,17 @@ AutoBeggar.leaveBtn:SetScript("OnClick", function(self, arg1)
     hsBtn:Show();
 end)
 
+--
+--
 
+  if(event == "CHAT_MSG_SAY") then
+      if(strlower(arg1) == strlower("")) then
+        arg2, _ = strsplit("-", arg2);
+        QuickLayer_HandleRequest(arg2, true);
+      end
+  else
+--
+--
 
 
 ---------------------------------
