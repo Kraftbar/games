@@ -10,3 +10,7 @@
 ### ideas
 > not loaded when not female  
 > 2D array with string for agressiveness  
+
+
+### ide
+>**[ZeroBraneStudio](https://github.com/pkulchenko/ZeroBraneStudio)**    

@@ -22,7 +22,7 @@ end
 -- Project Code Below
 ---------------------------------      
 local AutoBeggar = CreateFrame("Frame", "MUI_BuffFrame", UIParent, "BasicFrameTemplateWithInset");
-AutoBeggar:SetSize(260, 360);
+AutoBeggar:SetSize(220, 300);
 AutoBeggar:SetPoint("CENTER"); -- Doesn't need to be ("CENTER", UIParent, "CENTER")
 
 AutoBeggar:SetMovable(true)
@@ -70,13 +70,13 @@ end)
 -- Earn money Button:
 AutoBeggar.earnBtn = CreateFrame("Button", nil, AutoBeggar, "GameMenuButtonTemplate");
 AutoBeggar.earnBtn:SetPoint("TOP", AutoBeggar.slapBtn, "BOTTOM", 0, -10);
-AutoBeggar.earnBtn:SetSize(100, 20);
+AutoBeggar.earnBtn:SetSize(100, 30);
 AutoBeggar.earnBtn:SetText("Earn money");
 AutoBeggar.earnBtn:SetNormalFontObject("GameFontNormal");
 AutoBeggar.earnBtn:SetHighlightFontObject("GameFontHighlight");
 
 AutoBeggar.earnBtn:SetScript("OnClick", function(self, arg1)
-    print("Hello, i need some money")
+    SendChatMessage("Hello, i need some money" ,"SAY" ,"Common" );
 end)
 
 
@@ -121,46 +121,41 @@ end)
 
 --
 --
-
-  if(event == "CHAT_MSG_SAY") then
-      if(strlower(arg1) == strlower("")) then
-        arg2, _ = strsplit("-", arg2);
-        QuickLayer_HandleRequest(arg2, true);
-      end
-  else
+--  if(event == "CHAT_MSG_SAY") then
+--      if(strlower(arg1) == strlower("")) then
+--        arg2, _ = strsplit("-", arg2);
+--        QuickLayer_HandleRequest(arg2, true);
+--      end
+--  else
 --
 --
 
+
+---------------------------------
+-- Text
+---------------------------------
+AutoBeggar.sliderText = AutoBeggar:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
+AutoBeggar.sliderText:SetPoint("CENTER", AutoBeggar.TitleBg, "CENTER", 10, -170);
+AutoBeggar.sliderText:SetText("Aggressiveness  (G/hr):");
 
 ---------------------------------
 -- Sliders
 ---------------------------------
 -- Slider 1:
 AutoBeggar.slider1 = CreateFrame("SLIDER", nil, AutoBeggar, "OptionsSliderTemplate");
-AutoBeggar.slider1:SetPoint("TOP", AutoBeggar.leaveBtn, "BOTTOM", 0, -20);
+AutoBeggar.slider1:SetPoint("TOP", AutoBeggar.leaveBtn, "BOTTOM", 0, -40);
 AutoBeggar.slider1:SetMinMaxValues(1, 100);
 AutoBeggar.slider1:SetValue(50);
-AutoBeggar.slider1:SetValueStep(30);
+AutoBeggar.slider1:SetValueStep(50);
 AutoBeggar.slider1:SetObeyStepOnDrag(true);
-
--- Slider 2:
-AutoBeggar.slider2 = CreateFrame("SLIDER", nil, AutoBeggar, "OptionsSliderTemplate");
-AutoBeggar.slider2:SetPoint("TOP", AutoBeggar.slider1, "BOTTOM", 0, -20);
-AutoBeggar.slider2:SetMinMaxValues(1, 100);
-AutoBeggar.slider2:SetValue(40);
-AutoBeggar.slider2:SetValueStep(30);
-AutoBeggar.slider2:SetObeyStepOnDrag(true);
 
 ---------------------------------
 -- Check Buttons
 ---------------------------------
 -- Check Button 1:
 AutoBeggar.checkBtn1 = CreateFrame("CheckButton", nil, AutoBeggar, "UICheckButtonTemplate");
-AutoBeggar.checkBtn1:SetPoint("TOPLEFT", AutoBeggar.slider1, "BOTTOMLEFT", -10, -40);
-AutoBeggar.checkBtn1.text:SetText("My Check Button!");
+AutoBeggar.checkBtn1:SetPoint("TOPLEFT", AutoBeggar.slider1, "BOTTOMLEFT", 0, -30);
+AutoBeggar.checkBtn1.text:SetText("Sexual confrontation");
+AutoBeggar.checkBtn1:SetChecked(true);
 
--- Check Button 2:
-AutoBeggar.checkBtn2 = CreateFrame("CheckButton", nil, AutoBeggar, "UICheckButtonTemplate");
-AutoBeggar.checkBtn2:SetPoint("TOPLEFT", AutoBeggar.checkBtn1, "BOTTOMLEFT", 0, -10);
-AutoBeggar.checkBtn2.text:SetText("Another Check Button!");
-AutoBeggar.checkBtn2:SetChecked(true);
+
