@@ -1,2 +1,2 @@
-convert frontP.jpg \( -size 800x450 -define gradient:extent=ellipse radial-gradient:white-black -contrast-stretch 60%x20% \) -compose copy_opacity -composite  flagPB.png
+convert frontP.jpg \( -size 800x450 -define gradient:extent=ellipse radial-gradient:white-black -contrast-stretch 60%x20% \) -compose copy_opacity -composite  frontPB.png
 
