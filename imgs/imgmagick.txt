@@ -1,0 +1,1 @@
+convert frontP.jpg \( -size 800x468 radial-gradient:white-black -contrast-stretch %x0% \) -compose copy_opacity -composite  flag3.png
