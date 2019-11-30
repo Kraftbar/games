@@ -1,6 +1,6 @@
 # fishingWoW
 <p align="center">
-  <img src="imgs/frontPB.png" width="460">
+  <img src="imgs/frontPB (copy).png" width="460">
 </p>
 
 #### dependencies
