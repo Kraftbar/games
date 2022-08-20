@@ -1,4 +1,4 @@
-# fishingWoW
+# FishingWoW
 <p align="center">
   <img src="imgs/frontPB.png" width="460">
 </p>
