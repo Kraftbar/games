@@ -4,7 +4,14 @@
 </p>
 
 #### dependencies
-> **[mss](https://pypi.org/project/mss/)**   
+> **[numpy](https://pypi.org/project/numpy/)**   
 > **[opencv-python](https://pypi.org/project/opencv-python/)**   
-> **[pynput](https://github.com/moses-palmer/pynput)**   
+> **[mss](https://pypi.org/project/mss/)**   
+> **[pynput](https://pypi.org/project/pynput/)**   
+> **[imutils](https://pypi.org/project/imutils/)**   
+> **[pynput](https://pypi.org/project/pynput/)**   
+> **[screeninfo](https://pypi.org/project/screeninfo/)**   
+
 <br/>
+
+

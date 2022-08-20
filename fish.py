@@ -1,18 +1,18 @@
-
+import datetime 
 import time
 
 
-from imutils.video import VideoStream
-import imutils
-import datetime
-
-import cv2
-import mss
 import numpy as np
-import screeninfo
+import cv2
 
+from imutils.video import VideoStream # intsall
+import imutils # install
+from pynput.mouse import Button, Controller # install
+import mss # intsall 
+import screeninfo  # install
 
-from pynput.mouse import Button, Controller
+ 
+
 
 mouse = Controller()
 
