@@ -1,13 +1,15 @@
 /* roundnotify.c
- * Version: v1.2.0 (2026-01-04)
+ * Version: v1.3.0 (2026-01-04)
  *
  * Purpose:
- * - Listen on 127.0.0.1:3000 for CS2/CS:GO GSI HTTP POST JSON.
- * - Detect "new round starts" by watching round.phase transition -> "freezetime".
- *   (This is the earliest moment of the new round: spawn + buy time.)
+ * - Listen on 127.0.0.1:3000 for CS2 Game State Integration (GSI) HTTP POST JSON.
+ * - Beep+flash when a new round starts (round.phase -> "freezetime").
  *
- * Build (MSVC):  cl /O2 /W3 roundnotify.c /link ws2_32.lib user32.lib
- * Build (MinGW): gcc -O2 -Wall roundnotify.c -o roundnotify.exe -lws2_32 -luser32
+ * TODO implemented:
+ * - Do not beep if CS2 window is already focused (it will still print debug lines).
+ *
+ * Build+Run (MSVC, Developer Command Prompt):
+ *   cl /O2 /W3 roundnotify.c /link ws2_32.lib user32.lib && roundnotify.exe
  */
 
 #define _CRT_SECURE_NO_WARNINGS
@@ -20,39 +22,47 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-static void flash_cs_window(void) {
+static HWND find_cs_window(void) {
     const char* candidates[] = {
         "Counter-Strike 2",
-        "Counter-Strike: Global Offensive",
-        "Counter-Strike"
+        "Counter-Strike 2 - Direct3D 11",
+        "Counter-Strike 2 - Vulkan"
     };
-
-    HWND h = NULL;
-    for (int i = 0; i < (int)(sizeof(candidates)/sizeof(candidates[0])); i++) {
-        h = FindWindowA(NULL, candidates[i]);
-        if (h) break;
+    for (int i = 0; i < (int)(sizeof(candidates) / sizeof(candidates[0])); i++) {
+        HWND h = FindWindowA(NULL, candidates[i]);
+        if (h) return h;
     }
-    if (!h) h = GetForegroundWindow();
+    return NULL;
+}
 
-    if (h) {
-        FLASHWINFO fw = {0};
-        fw.cbSize = sizeof(fw);
-        fw.hwnd = h;
-        fw.dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG;
-        fw.uCount = 6;
-        fw.dwTimeout = 0;
-        FlashWindowEx(&fw);
-    }
+static void flash_cs_window(HWND h) {
+    if (!h) return;
+    FLASHWINFO fw = {0};
+    fw.cbSize = sizeof(fw);
+    fw.hwnd = h;
+    fw.dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG;
+    fw.uCount = 6;
+    fw.dwTimeout = 0;
+    FlashWindowEx(&fw);
 }
 
 static void notify_user(void) {
-    // Guaranteed attempt via speaker/audio device
+    HWND cs = find_cs_window();
+
+    // TODO feature: don't beep if CS is already focused
+    if (cs && GetForegroundWindow() == cs) {
+        // Still could flash, but pointless if focused; skip everything.
+        return;
+    }
+
+    // Beep works even when Windows system sounds are disabled
     if (!Beep(880, 200)) {
         printf("Beep() failed, GetLastError=%lu\n", GetLastError());
     }
-    flash_cs_window();
-}
 
+    if (!cs) cs = GetForegroundWindow(); // fallback: flash current foreground app
+    flash_cs_window(cs);
+}
 
 static int find_header_end(const char* buf, int len) {
     for (int i = 0; i + 3 < len; i++) {
@@ -63,7 +73,6 @@ static int find_header_end(const char* buf, int len) {
 }
 
 static int parse_content_length(const char* headers) {
-    // Very small/forgiving parser for "Content-Length: N"
     const char* p = headers;
     while (*p) {
         const char* line_end = strstr(p, "\r\n");
@@ -80,15 +89,12 @@ static int parse_content_length(const char* headers) {
 }
 
 static int extract_round_phase(const char* json, char* out, size_t out_sz) {
-    // Find the "round" object first, then find "phase" within it.
     const char* r = strstr(json, "\"round\"");
     if (!r) return 0;
 
-    // Find the opening brace of round object
     r = strchr(r, '{');
     if (!r) return 0;
 
-    // Search for "phase" after that
     const char* p = strstr(r, "\"phase\"");
     if (!p) return 0;
 
@@ -152,7 +158,6 @@ int main(void) {
         SOCKET c = accept(s, NULL, NULL);
         if (c == INVALID_SOCKET) continue;
 
-        // Read headers first (up to a reasonable cap)
         char buf[131072];
         int total = 0;
 
@@ -167,7 +172,6 @@ int main(void) {
                 int content_len = parse_content_length(buf);
                 if (content_len < 0) content_len = 0;
 
-                // Ensure we have full body
                 int have_body = total - hdr_end;
                 while (have_body < content_len && total < (int)sizeof(buf) - 1) {
                     int rr = recv(c, buf + total, (int)sizeof(buf) - 1 - total, 0);
@@ -180,7 +184,6 @@ int main(void) {
             }
         }
 
-        // Respond OK so CS keeps sending
         const char* resp =
             "HTTP/1.1 200 OK\r\n"
             "Content-Length: 2\r\n"
@@ -196,14 +199,10 @@ int main(void) {
         const char* body = buf + hdr_end;
 
         char phase[32] = {0};
-        if (!extract_round_phase(body, phase, sizeof(phase))) {
-            // No round.phase in this packet; ignore (warmup/map-only packets etc.)
-            continue;
-        }
+        if (!extract_round_phase(body, phase, sizeof(phase))) continue;
 
         printf("round.phase=%s\n", phase);
 
-        // NEW ROUND STARTS: transition into freezetime
         if (strcmp(phase, "freezetime") == 0 && strcmp(last_phase, "freezetime") != 0) {
             notify_user();
             printf(">>> NOTIFY (new round started: freezetime)\n");
