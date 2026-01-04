@@ -24,7 +24,3 @@ Restart Counter-Strike 2 after placing the file.
 - Beeps when a **new round starts** (`round.phase = freezetime`)
 - Intended for use while **alt-tabbed**
 
-
-
-## TODO
-- Do not beep if CS2 window is already focused
