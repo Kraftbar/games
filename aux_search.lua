@@ -26,17 +26,8 @@ local function arrlen(t)
   local n = 0; for _ in pairs(t) do n = n + 1 end; return n
 end
 
--- Output helper: prefer CombatInfoWindowScroll, else SecondsUntilDeathWindowScroll, else chat
-local function AuxFind_Display(lines)
-  -- If our own results frame is visible, prefer it
-  local resScroll = (getglobal and getglobal("AuxFindResultsScroll")) or AuxFindResultsScroll
-  local resFrame = (getglobal and getglobal("AuxFindFrame")) or AuxFindFrame
-  local scroll = nil
-  if resScroll and resFrame and resFrame:IsShown() then
-    scroll = resScroll
-  else
-    scroll = (getglobal and getglobal("CombatInfoWindowScroll")) or CombatInfoWindowScroll
-  end
+local function AuxFind_DisplayLines(lines)
+  local scroll = (getglobal and getglobal("CombatInfoWindowScroll")) or CombatInfoWindowScroll
   if not scroll or not scroll.AddMessage then
     scroll = (getglobal and getglobal("SecondsUntilDeathWindowScroll")) or SecondsUntilDeathWindowScroll
   end
@@ -51,6 +42,69 @@ local function AuxFind_Display(lines)
       DEFAULT_CHAT_FRAME:AddMessage(lines[i])
     end
   end
+end
+
+local function AuxFind_RenderRows(self)
+  local f = self
+  if not f or not f.rows then return end
+  local total = arrlen(f.resultRows or {})
+  local maxOffset = max(0, total - (f.visibleRows or 1))
+  if (f.resultOffset or 0) > maxOffset then f.resultOffset = maxOffset end
+  if (f.resultOffset or 0) < 0 then f.resultOffset = 0 end
+
+  f._syncSlider = true
+  if f.resultSlider then
+    f.resultSlider:SetMinMaxValues(0, maxOffset)
+    f.resultSlider:SetValue(f.resultOffset or 0)
+    if maxOffset > 0 then f.resultSlider:Show() else f.resultSlider:Hide() end
+  end
+  f._syncSlider = nil
+
+  for i = 1, (f.visibleRows or 0) do
+    local row = f.rows[i]
+    local data = f.resultRows[(f.resultOffset or 0) + i]
+    if row and data then
+      if data.isMessage then
+        row.cName:SetText(data.name or "")
+        row.cId:SetText("")
+        row.cPrice:SetText("")
+      else
+        row.cName:SetText(data.name or "")
+        row.cId:SetText(data.id or "")
+        row.cPrice:SetText(data.price or "")
+      end
+      row:Show()
+    elseif row then
+      row:Hide()
+    end
+  end
+end
+
+local function AuxFind_DisplayRows(rows, subtitle)
+  local f = (getglobal and getglobal("AuxFindFrame")) or AuxFindFrame
+  if not f then
+    AuxFind_Open()
+    f = (getglobal and getglobal("AuxFindFrame")) or AuxFindFrame
+  end
+  if not f or not f.rows then
+    local lines = {}
+    if subtitle and subtitle ~= "" then lines[1] = subtitle end
+    for i = 1, arrlen(rows or {}) do
+      local r = rows[i]
+      lines[arrlen(lines) + 1] = format("- %s (%s): %s", tostring(r.name or ""), tostring(r.id or ""), tostring(r.price or ""))
+    end
+    if arrlen(lines) == 0 then lines[1] = "|cffffff00[AuxFind]|r No results." end
+    AuxFind_DisplayLines(lines)
+    return
+  end
+  f.resultRows = rows or {}
+  f.resultOffset = 0
+  if f.resultTitle then f.resultTitle:SetText(subtitle or "") end
+  if f.RenderRows then f:RenderRows() end
+end
+
+local function AuxFind_DisplayMessage(msg)
+  AuxFind_DisplayRows({{ isMessage = true, name = msg or "" }}, "")
 end
 
 local function faction_key()
@@ -135,8 +189,9 @@ end
 function AuxFind_Open()
   local f = (getglobal and getglobal("AuxFindFrame")) or AuxFindFrame
   if not f then
+    local fw, fh = 520, 320
     f = CreateFrame("Frame", "AuxFindFrame", UIParent)
-    f:SetWidth(400); f:SetHeight(260)
+    f:SetWidth(fw); f:SetHeight(fh)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     f:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } })
     f:SetBackdropColor(0, 0, 0, 1)
@@ -151,23 +206,129 @@ function AuxFind_Open()
     local eb = CreateFrame("EditBox", "AuxFindEditBox", f, "InputBoxTemplate")
     eb:SetAutoFocus(false)
     eb:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -32)
-    eb:SetWidth(280); eb:SetHeight(20)
+    eb:SetWidth(fw - 122); eb:SetHeight(20)
     eb:SetText("")
     local go = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    go:SetWidth(80); go:SetHeight(20)
+    go:SetWidth(86); go:SetHeight(20)
     go:SetText("Search")
     go:SetPoint("LEFT", eb, "RIGHT", 6, 0)
-    local scroll = CreateFrame("ScrollingMessageFrame", "AuxFindResultsScroll", f)
-    scroll:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -60)
-    scroll:SetWidth(380); scroll:SetHeight(180)
-    scroll:SetFontObject(GameFontNormal)
-    scroll:SetJustifyH("LEFT")
-    scroll:SetMaxLines(1000)
-    scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function()
-      if arg1 > 0 then scroll:ScrollUp() else scroll:ScrollDown() end
+
+    local resultTitle = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    resultTitle:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -56)
+    resultTitle:SetText("")
+    f.resultTitle = resultTitle
+
+    local tableWrap = CreateFrame("Frame", nil, f)
+    tableWrap:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -72)
+    tableWrap:SetWidth(fw - 20)
+    tableWrap:SetHeight(fh - 82)
+    f.tableWrap = tableWrap
+
+    local rowAreaWidth = fw - 38
+    local rowAreaHeight = fh - 106
+    local rowHeight = 16
+    local visibleRows = floor(rowAreaHeight / rowHeight)
+    local colName, colId = 292, 72
+    local colPrice = rowAreaWidth - (colName + colId + 8)
+    if colPrice < 100 then colPrice = 100 end
+    local xName = 0
+    local xId = xName + colName + 4
+    local xPrice = xId + colId + 4
+
+    local function makeHeaderCell(xPos, width, text, justify)
+      local bg = tableWrap:CreateTexture(nil, "BACKGROUND")
+      bg:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+      bg:SetVertexColor(1, 1, 1, 0.20)
+      bg:SetPoint("TOPLEFT", tableWrap, "TOPLEFT", xPos, 0)
+      bg:SetWidth(width)
+      bg:SetHeight(16)
+      local fs = tableWrap:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+      fs:SetPoint("TOPLEFT", tableWrap, "TOPLEFT", xPos + 3, -2)
+      fs:SetWidth(width - 6)
+      fs:SetJustifyH(justify or "LEFT")
+      fs:SetText(text or "")
+      return bg, fs
+    end
+    makeHeaderCell(xName, colName, "Item", "LEFT")
+    makeHeaderCell(xId, colId, "ID", "RIGHT")
+    makeHeaderCell(xPrice, colPrice, "Price", "RIGHT")
+
+    local rowArea = CreateFrame("Frame", nil, tableWrap)
+    rowArea:SetPoint("TOPLEFT", tableWrap, "TOPLEFT", 0, -20)
+    rowArea:SetWidth(rowAreaWidth)
+    rowArea:SetHeight(rowAreaHeight)
+    rowArea:EnableMouseWheel(true)
+    f.rowArea = rowArea
+
+    local slider = CreateFrame("Slider", "AuxFindResultsSlider", tableWrap, "UIPanelScrollBarTemplate")
+    slider:SetPoint("TOPRIGHT", tableWrap, "TOPRIGHT", 0, -20)
+    slider:SetPoint("BOTTOMRIGHT", tableWrap, "BOTTOMRIGHT", 0, 0)
+    slider:SetMinMaxValues(0, 0)
+    slider:SetValueStep(1)
+    slider:SetValue(0)
+    f.resultSlider = slider
+
+    f.rows = {}
+    f.visibleRows = visibleRows
+    f.resultOffset = 0
+    f.resultRows = {}
+    f.RenderRows = AuxFind_RenderRows
+
+    for i = 1, visibleRows do
+      local r = CreateFrame("Frame", nil, rowArea)
+      r:SetWidth(rowAreaWidth)
+      r:SetHeight(rowHeight)
+      r:SetPoint("TOPLEFT", rowArea, "TOPLEFT", 0, -((i - 1) * rowHeight))
+
+      local shade = (mod(i, 2) == 0) and 0.14 or 0.08
+      local function makeCell(xPos, width, justify)
+        local bg = r:CreateTexture(nil, "BACKGROUND")
+        bg:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+        bg:SetVertexColor(1, 1, 1, shade)
+        bg:SetPoint("TOPLEFT", r, "TOPLEFT", xPos, 0)
+        bg:SetWidth(width)
+        bg:SetHeight(rowHeight)
+        local fs = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        fs:SetPoint("TOPLEFT", r, "TOPLEFT", xPos + 3, 0)
+        fs:SetWidth(width - 6)
+        fs:SetJustifyH(justify or "LEFT")
+        return bg, fs
+      end
+
+      local bgName, cName = makeCell(xName, colName, "LEFT")
+      local bgId, cId = makeCell(xId, colId, "RIGHT")
+      local bgPrice, cPrice = makeCell(xPrice, colPrice, "RIGHT")
+      r.bgName = bgName
+      r.bgId = bgId
+      r.bgPrice = bgPrice
+      r.cName = cName
+      r.cId = cId
+      r.cPrice = cPrice
+      f.rows[i] = r
+    end
+
+    local function stepScroll(delta)
+      local step = 3
+      if IsShiftKeyDown and IsShiftKeyDown() then
+        step = 10
+      elseif IsControlKeyDown and IsControlKeyDown() then
+        step = 1
+      end
+      local nextOffset = f.resultOffset or 0
+      if delta > 0 then nextOffset = nextOffset - step else nextOffset = nextOffset + step end
+      if nextOffset < 0 then nextOffset = 0 end
+      f.resultOffset = nextOffset
+      if f.RenderRows then f:RenderRows() end
+    end
+    rowArea:SetScript("OnMouseWheel", function() stepScroll(arg1) end)
+    slider:SetScript("OnValueChanged", function()
+      if f._syncSlider then return end
+      local v = floor((this:GetValue() or 0) + 0.5)
+      if v < 0 then v = 0 end
+      f.resultOffset = v
+      if f.RenderRows then f:RenderRows() end
     end)
-    f.scroll = scroll
+
     go:SetScript("OnClick", function()
       local q = eb:GetText() or ""
       AuxFind_Run(q)
@@ -192,6 +353,7 @@ function AuxFind_Open()
     if not found then tinsert(UISpecialFrames, "AuxFindFrame") end
   end
   f:Show()
+  if f.RenderRows then f:RenderRows() end
   local eb = (getglobal and getglobal("AuxFindEditBox")) or AuxFindEditBox
   if eb and eb.SetFocus then eb:SetFocus() end
 end
@@ -208,7 +370,7 @@ function AuxFind_Run(query)
   if eb and displayQuery ~= "" and eb.SetText then eb:SetText(displayQuery) end
   dbg("search: '" .. query .. "'")
   if not aux or not aux.account or not aux.account.item_ids then
-    AuxFind_Display({"|cffffff00[AuxFind]|r Aux DB not available. Ensure aux-addon is enabled."})
+    AuxFind_DisplayMessage("|cffffff00[AuxFind]|r Aux DB not available. Ensure aux-addon is enabled.")
     return
   end
 
@@ -223,29 +385,23 @@ function AuxFind_Run(query)
     end
   end
   if n == 0 then
-    AuxFind_Display({"|cffffff00[AuxFind]|r No matches for: " .. query})
+    AuxFind_DisplayMessage("|cffffff00[AuxFind]|r No matches for: " .. query)
     return
   end
 
   table.sort(found, function(a, b) return a.name < b.name end)
-  local lines = {"|cffffff00[AuxFind]|r Results for '" .. query .. "':"}
+  local rows = {}
   local shown = 0
   for i = 1, n do
     local it = found[i]
     local priceText = price_for_id(it.id)
-    if priceText and priceText ~= "(no cached price)" then
-      lines[arrlen(lines) + 1] = format("- %s (%d): %s", it.name, it.id, priceText)
-      shown = shown + 1
-      if shown >= 12 then
-        lines[arrlen(lines) + 1] = "... more results omitted. Refine your search."
-        break
-      end
-    end
+    shown = shown + 1
+    rows[shown] = { name = it.name or "?", id = tostring(it.id or "?"), price = priceText or "(no cached price)" }
   end
   if shown == 0 then
-    AuxFind_Display({"|cffffff00[AuxFind]|r No priced matches for '" .. query .. "'."})
+    AuxFind_DisplayMessage("|cffffff00[AuxFind]|r No matches for: " .. query)
   else
-    AuxFind_Display(lines)
+    AuxFind_DisplayRows(rows, "|cffffff00[AuxFind]|r Results for '" .. query .. "' (" .. tostring(shown) .. ")")
   end
 end
 
