@@ -755,6 +755,8 @@ eventFrame:SetScript("OnEvent", function()
     elseif event == "CHAT_MSG_SYSTEM" then
         if not soldPattern then return end
         local msg = arg1
+        -- WHC server protocol lines are not auction results; skip them silently.
+        if type(msg) == "string" and string.find(string.lower(msg), "^::whc::") then return end
         debugPrint("CHAT_MSG_SYSTEM: " .. tostring(msg))
         if type(msg) == "string" then
             local _, _, item = string.find(msg, soldPattern)
