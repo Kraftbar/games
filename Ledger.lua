@@ -12,6 +12,11 @@ local function ensure_db()
         VanillaLedgerDB.debug = false
     end
     VanillaLedgerDB.mailSeen = VanillaLedgerDB.mailSeen or {}
+    -- Signature format changed (v2: stable delivery-time buckets); old entries can never match.
+    if VanillaLedgerDB.mailSeenV ~= 2 then
+        VanillaLedgerDB.mailSeen = {}
+        VanillaLedgerDB.mailSeenV = 2
+    end
     -- UI preferences (view: all|sold|expired|bought)
     VanillaLedgerDB.view = VanillaLedgerDB.view or "all"
     if VanillaLedgerDB.view ~= "all" and VanillaLedgerDB.view ~= "sold" and VanillaLedgerDB.view ~= "expired" and VanillaLedgerDB.view ~= "bought" then
@@ -52,10 +57,10 @@ local function pruneMailSeen(nowTs)
     local kept = 0
     for k, v in pairs(seen) do
         local keep = false
-        if type(v) == "number" then
+        if type(v) == "table" then
+            keep = ((tonumber(v.t) or 0) >= ttlCut)
+        elseif type(v) == "number" then
             keep = (v >= ttlCut)
-        elseif v == true then
-            keep = true
         end
         if keep then
             kept = kept + 1
@@ -87,6 +92,7 @@ local function add_entry(bucket, item)
     addLedgerRow(bucket, {
         item = item,
         t = time(),
+        source = "chat",
     })
 end
 
@@ -134,21 +140,24 @@ local function formatCoins(copper)
     return format("%dg %ds %dc", g, s, c)
 end
 
-local function mailboxSig(subject, money, sender, daysLeft, CODAmount, hasItem)
+-- Stable across sessions: keyed on estimated delivery time (1h bucket), not the
+-- ever-decreasing daysLeft. Identical mails in the same bucket share a signature;
+-- the scan counts them instead of dropping duplicates.
+local function stableMailSig(subject, money, sender, deliveredAt, CODAmount, hasItem)
     subject = subject or ""
     sender = sender or ""
     money = tonumber(money or 0) or 0
-    local dl = floor(((daysLeft or 0) * 1000) + 0.5)
+    local bucket = floor(((deliveredAt or 0) / 3600) + 0.5)
     local cod = tonumber(CODAmount or 0) or 0
     local hi = hasItem and 1 or 0
-    return subject .. "|" .. tostring(money) .. "|" .. sender .. "|" .. tostring(dl) .. "|" .. tostring(cod) .. "|" .. tostring(hi)
+    return subject .. "|" .. tostring(money) .. "|" .. sender .. "|" .. tostring(bucket) .. "|" .. tostring(cod) .. "|" .. tostring(hi)
 end
 
-local function simpleMailKey(subject, money, sender)
-    subject = subject or ""
-    sender = sender or ""
-    money = tonumber(money or 0) or 0
-    return subject .. "|" .. tostring(money) .. "|" .. sender
+local function seenMailCount(sig)
+    local v = VanillaLedgerDB.mailSeen[sig]
+    if type(v) == "table" then return tonumber(v.n) or 1 end
+    if v then return 1 end
+    return 0
 end
 
 local MAIL_MAX_DAYS = 30
@@ -235,65 +244,115 @@ local function shouldTrustAuctionMailSender(sender, stationeryIcon)
     return true, "unknown-sender-fallback"
 end
 
--- Ephemeral dedupe across multiple API paths (resets on reload)
-local recentSeen = {}
-local function markRecent(key)
-    recentSeen[key] = GetTime() or 0
-end
-local function wasRecent(key)
-    local t = recentSeen[key]
-    if not t then return false end
-    if (GetTime() or 0) - t < 5 then return true end
-    recentSeen[key] = nil
+-- A live CHAT_MSG_SYSTEM record and the later AH mail describe the same event.
+-- Upgrade the chat entry in place instead of adding a duplicate row.
+local LEDGER_CHAT_MERGE_WINDOW = 36 * 60 * 60
+local function upgradeChatEntry(bucket, item, deliveredAt, money, qty)
+    local rows = VanillaLedgerDB[bucket]
+    local n = getn(rows)
+    for i = n, max(1, n - 400), -1 do
+        local e = rows[i]
+        if e and e.item == item and (e.source == "chat" or (e.source == nil and not e.money)) then
+            local dt = (deliveredAt or 0) - (e.t or 0)
+            if dt > -600 and dt < LEDGER_CHAT_MERGE_WINDOW then
+                if money and money > 0 then e.money = money end
+                local q = tonumber(qty or 1) or 1
+                if q > 1 then e.qty = q end
+                e.source = "chat+mail"
+                return true
+            end
+        end
+    end
     return false
 end
 
-local function recordInboxIndex(index, source)
-    local a, stationeryIcon, sender, subject, money, CODAmount, daysLeft, hasItem, wasRead = GetInboxHeaderInfo(index)
+local function recordMailEntry(entryType, item, qty, deliveredAt, money, senderReason)
+    if entryType == "sold" then
+        if not (money and money > 0) then return end
+        if upgradeChatEntry("sold", item, deliveredAt, money, 1) then
+            debugPrint("Mail sold merged into chat entry: " .. item .. " for " .. tostring(money) .. "c")
+            return
+        end
+        addLedgerRow("sold", { item = item, qty = 1, t = deliveredAt, money = money, source = "mail" })
+        debugPrint("Mail sold recorded: " .. item .. " for " .. tostring(money) .. "c (" .. senderReason .. ", at " .. date("%Y-%m-%d %H:%M", deliveredAt) .. ")")
+    else
+        if upgradeChatEntry(entryType, item, deliveredAt, nil, qty) then
+            debugPrint("Mail " .. entryType .. " merged into chat entry: " .. item .. " x" .. tostring(qty or 1))
+            return
+        end
+        addLedgerRow(entryType, { item = item, qty = qty or 1, t = deliveredAt, source = "mail" })
+        debugPrint("Mail " .. entryType .. " recorded: " .. item .. " x" .. tostring(qty or 1) .. " (" .. senderReason .. ", at " .. date("%Y-%m-%d %H:%M", deliveredAt) .. ")")
+    end
+end
+
+local function scanInbox()
+    ensure_db()
+    local num = GetInboxNumItems() or 0
+    debugPrint("Inbox scan: items=" .. tostring(num))
+    local present = {}
+    for i = 1, num do
+        local _, stationeryIcon, sender, subject, money, CODAmount, daysLeft, hasItem, wasRead = GetInboxHeaderInfo(i)
+        subject = subject or ""
+        sender = sender or ""
+        money = money or 0
+        -- BeanCounter-style guard: process unread mail only.
+        if not wasRead then
+            local entryType, subjectItem = classifyAuctionSubject(subject)
+            if entryType then
+                local trustSender, senderReason = shouldTrustAuctionMailSender(sender, stationeryIcon)
+                if trustSender then
+                    local deliveredAt = inboxDeliveryTimestamp(daysLeft)
+                    local sig = stableMailSig(subject, money, sender, deliveredAt, CODAmount, hasItem)
+                    local p = present[sig]
+                    if not p then
+                        p = { count = 0, entryType = entryType, item = subjectItem, money = money,
+                              deliveredAt = deliveredAt, index = i, hasItem = hasItem, reason = senderReason }
+                        present[sig] = p
+                    end
+                    p.count = p.count + 1
+                else
+                    debugPrint("Inbox(" .. tostring(i) .. ") ignored non-AH sender '" .. tostring(sender) .. "' for auction-like subject.")
+                end
+            end
+        end
+    end
+    for sig, p in pairs(present) do
+        local seen = seenMailCount(sig)
+        if p.count > seen then
+            local itemName, itemCount = nil, 1
+            if p.hasItem then
+                itemName, itemCount = safeInboxItem(p.index)
+            end
+            for r = 1, p.count - seen do
+                recordMailEntry(p.entryType, itemName or p.item, itemCount or 1, p.deliveredAt, p.money, p.reason)
+            end
+            seen = p.count
+        end
+        VanillaLedgerDB.mailSeen[sig] = { n = seen, t = p.deliveredAt }
+    end
+end
+
+-- Looting/deleting destroys the mail, so record it now even if it was read
+-- (read mail is skipped by the background scan).
+local function recordInboxInteract(index)
+    ensure_db()
+    local _, stationeryIcon, sender, subject, money, CODAmount, daysLeft, hasItem = GetInboxHeaderInfo(index)
     subject = subject or ""
     sender = sender or ""
     money = money or 0
-    local deliveredAt = inboxDeliveryTimestamp(daysLeft)
-    ensure_db()
-    -- BeanCounter-style guard: background inbox scans process unread mail only.
-    if source == "mail" and wasRead then
-        return
-    end
     local entryType, subjectItem = classifyAuctionSubject(subject)
     if not entryType then return end
-    local trustSender, senderReason = shouldTrustAuctionMailSender(sender, stationeryIcon)
-    if not trustSender then
-        debugPrint("Inbox(" .. tostring(index) .. ") ignored non-AH sender '" .. tostring(sender) .. "' for auction-like subject.")
-        return
+    local trustSender = shouldTrustAuctionMailSender(sender, stationeryIcon)
+    if not trustSender then return end
+    local deliveredAt = inboxDeliveryTimestamp(daysLeft)
+    local sig = stableMailSig(subject, money, sender, deliveredAt, CODAmount, hasItem)
+    if seenMailCount(sig) > 0 then return end
+    local itemName, itemCount = nil, 1
+    if hasItem then
+        itemName, itemCount = safeInboxItem(index)
     end
-    local sig = mailboxSig(subject, money, sender, daysLeft, CODAmount, hasItem)
-    local simple = simpleMailKey(subject, money, sender)
-    if not VanillaLedgerDB.mailSeen[sig] and not wasRecent(simple) then
-        if entryType == "sold" and money and money > 0 then
-            addLedgerRow("sold", { item = subjectItem, qty = 1, t = deliveredAt, money = money, source = source or "mail" })
-            VanillaLedgerDB.mailSeen[sig] = deliveredAt
-            markRecent(simple)
-            debugPrint("Inbox(" .. tostring(index) .. ") recorded: " .. subjectItem .. " for " .. tostring(money) .. "c (" .. (source or "mail") .. ", " .. senderReason .. ", at " .. date("%Y-%m-%d %H:%M", deliveredAt) .. ")")
-        elseif entryType == "expired" then
-            local itemName, itemCount = nil, 1
-            if hasItem then
-                itemName, itemCount = safeInboxItem(index)
-            end
-            addLedgerRow("expired", { item = itemName or subjectItem, qty = itemCount or 1, t = deliveredAt, source = source or "mail" })
-            VanillaLedgerDB.mailSeen[sig] = deliveredAt
-            markRecent(simple)
-            debugPrint("Inbox(" .. tostring(index) .. ") expired recorded: " .. (itemName or subjectItem) .. " x" .. tostring(itemCount or 1) .. " (" .. (source or "mail") .. ", " .. senderReason .. ", at " .. date("%Y-%m-%d %H:%M", deliveredAt) .. ")")
-        elseif entryType == "bought" then
-            local itemName, itemCount = nil, 1
-            if hasItem then
-                itemName, itemCount = safeInboxItem(index)
-            end
-            addLedgerRow("bought", { item = itemName or subjectItem, qty = itemCount or 1, t = deliveredAt, source = source or "mail" })
-            VanillaLedgerDB.mailSeen[sig] = deliveredAt
-            markRecent(simple)
-            debugPrint("Inbox(" .. tostring(index) .. ") bought recorded: " .. (itemName or subjectItem) .. " x" .. tostring(itemCount or 1) .. " (" .. (source or "mail") .. ", " .. senderReason .. ", at " .. date("%Y-%m-%d %H:%M", deliveredAt) .. ")")
-        end
-    end
+    recordMailEntry(entryType, itemName or subjectItem, itemCount or 1, deliveredAt, money, "interact")
+    VanillaLedgerDB.mailSeen[sig] = { n = 1, t = deliveredAt }
 end
 
 local function dateKey(ts)
@@ -691,13 +750,8 @@ eventFrame:SetScript("OnEvent", function()
         debugPrint("MAIL_SHOW: checking inbox")
         CheckInbox()
     elseif event == "MAIL_INBOX_UPDATE" then
-        ensure_db()
         -- Process inbox to capture offline sold/expired/bought entries
-        local num = GetInboxNumItems()
-        debugPrint("MAIL_INBOX_UPDATE: items=" .. tostring(num))
-        for i = 1, (num or 0) do
-            recordInboxIndex(i, "mail")
-        end
+        scanInbox()
     elseif event == "CHAT_MSG_SYSTEM" then
         if not soldPattern then return end
         local msg = arg1
@@ -1323,7 +1377,7 @@ end
 do
     local orig_TakeInboxMoney = TakeInboxMoney
     function TakeInboxMoney(index)
-        recordInboxIndex(index, "mail-click")
+        recordInboxInteract(index)
         return orig_TakeInboxMoney(index)
     end
 end
@@ -1333,7 +1387,7 @@ do
     local orig_AutoLootMailItem = AutoLootMailItem
     if orig_AutoLootMailItem then
         function AutoLootMailItem(index)
-            recordInboxIndex(index, "auto-loot")
+            recordInboxInteract(index)
             return orig_AutoLootMailItem(index)
         end
     end
@@ -1343,7 +1397,7 @@ do
     local orig_TakeInboxItem = TakeInboxItem
     if orig_TakeInboxItem then
         function TakeInboxItem(index, attachment)
-            recordInboxIndex(index, "take-item")
+            recordInboxInteract(index)
             return orig_TakeInboxItem(index, attachment)
         end
     end
@@ -1353,7 +1407,7 @@ do
     local orig_DeleteInboxItem = DeleteInboxItem
     if orig_DeleteInboxItem then
         function DeleteInboxItem(index)
-            recordInboxIndex(index, "delete")
+            recordInboxInteract(index)
             return orig_DeleteInboxItem(index)
         end
     end
