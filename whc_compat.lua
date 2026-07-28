@@ -40,6 +40,11 @@ loginFrame:SetScript("OnEvent", function()
     loginFrame:SetScript("OnUpdate", function()
         if GetTime() < (this.joinAt or 0) then return end
         this:SetScript("OnUpdate", nil)
-        JoinChannelByName("world", nil, DEFAULT_CHAT_FRAME)
+        JoinChannelByName("world")
+        -- Joining alone does not bind the channel to a chat window on 1.12
+        -- (the frame argument must be a frame ID, and even then it is flaky);
+        -- being in the channel while seeing nothing looks like broken world
+        -- chat, so bind it explicitly.
+        ChatFrame_AddChannel(DEFAULT_CHAT_FRAME, "world")
     end)
 end)
