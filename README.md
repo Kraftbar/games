@@ -62,3 +62,9 @@ After updating the addon, use `/reload`, then check:
 5. `/auxfind` supports live debounced text search, min/max gold, cached-only filtering, and header sorting.
 
 If a server uses different combat or auction text, enable `/vanilla diag on`, reproduce it, and inspect `/vanilla diag show`.
+
+## Bundled MoneyFrame compatibility fix
+
+[`extras/!MoneyFrameFix`](extras/!MoneyFrameFix/README.md) contains a standalone early-loading fix for the Vanilla `MoneyFrame.lua:185` nil-money error triggered by hidden tooltip scanners such as Puppeteer's HealComm-1.0.
+
+It must be copied to `Interface/AddOns/!MoneyFrameFix` beside this addon; WoW does not load addon folders nested under `vanilla-addon`. Keep the leading `!` and fully restart WoW after installation.
