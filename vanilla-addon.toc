@@ -1,11 +1,21 @@
 ## Interface: 11200
-## Title: vanillaAddon
-## Notes: Prints "Hello, World" to the chat.
+## Title: Vanilla Toolkit
+## Notes: Modular combat tracking, auction ledger, warnings, diagnostics, and Aux search.
 ## Author: Paul Halliday
-## Version: 0.0.1
+## Version: 2.0.0
 ## SavedVariables: VanillaLedgerDB, VanillaLedgerErrors
 
-Ledger.lua
-window.lua
-warnings.lua
-aux_search.lua
+vanilla_core.lua
+
+combat_core.lua
+combat_ui.lua
+combat_warnings.lua
+player_features.lua
+
+ledger_core.lua
+ledger_economics.lua
+ledger_mail.lua
+ledger_ui.lua
+
+aux_core.lua
+aux_ui.lua
