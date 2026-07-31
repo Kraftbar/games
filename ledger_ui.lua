@@ -56,6 +56,10 @@ function UI:Create()
     local tableFrame = CreateFrame("Frame", nil, frame)
     tableFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -58)
     tableFrame:SetWidth(590); tableFrame:SetHeight(290)
+    -- UIPanelScrollBarTemplate fires its inherited OnValueChanged during
+    -- creation and expects its parent to implement this ScrollFrame method.
+    -- Rows are offset manually, so the template callback should be a no-op.
+    tableFrame.SetVerticalScroll = function() end
     self.tableFrame = tableFrame
     for i = 1, VA:ArrayLen(columns) do
         local column = columns[i]

@@ -13,6 +13,7 @@ local function object(name)
     local value = { _name = name, _shown = true, _text = "", _scripts = {}, _events = {}, _checked = false, _value = 0 }
     setmetatable(value, { __index = function(self, key)
         if key == "nextCheck" or key == "pendingAt" or key == "settingQuery" then return nil end
+        if key == "SetVerticalScroll" then return nil end
         if key == "SetScript" then return function(_, script, callback) self._scripts[script] = callback end end
         if key == "GetScript" then return function(_, script) return self._scripts[script] end end
         if key == "RegisterEvent" then return function(_, eventName) self._events[eventName] = true end end
@@ -37,7 +38,8 @@ end
 UIParent, Minimap = object("UIParent"), object("Minimap")
 DEFAULT_CHAT_FRAME, UIErrorsFrame, GameTooltip = object("ChatFrame1"), object("UIErrorsFrame"), object("GameTooltip")
 GameFontNormal, GameFontHighlightSmall, GameFontNormalSmall, GameFontNormalLarge = {}, {}, {}, {}
-function CreateFrame(_, name)
+function CreateFrame(_, name, parent, template)
+    if template == "UIPanelScrollBarTemplate" and parent then parent:SetVerticalScroll(0) end
     local frame = object(name)
     frames[#frames + 1] = frame
     if name then _G[name] = frame end

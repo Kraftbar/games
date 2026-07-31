@@ -70,6 +70,9 @@ function UI:Create()
 
     local tableFrame = CreateFrame("Frame", nil, frame)
     tableFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -112); tableFrame:SetWidth(548); tableFrame:SetHeight(238)
+    -- See ledger_ui: the Vanilla scrollbar template updates its parent before
+    -- our own OnValueChanged handler can be installed.
+    tableFrame.SetVerticalScroll = function() end
     self.nameHeader = newHeader(tableFrame, "Item", 0, 300, "name", false)
     self.idHeader = newHeader(tableFrame, "ID", 304, 62, "id", true)
     self.priceHeader = newHeader(tableFrame, "Price", 370, 160, "price", true)
