@@ -22,7 +22,7 @@ local function takeMatching(rows, item, newest)
     for i = startIndex, endIndex, step do
         local row = rows[i]
         if row and row.item == item then
-            table.remove(rows, i)
+            VA:ArrayRemove(rows, i)
             return row
         end
     end
@@ -30,25 +30,25 @@ local function takeMatching(rows, item, newest)
 end
 
 function Economics:ConfirmPost()
-    local row = table.remove(self.postCalls, 1)
+    local row = VA:ArrayRemove(self.postCalls, 1)
     if not row then return end
-    tinsert(Ledger.db.pendingPosts, row)
+    VA:ArrayPush(Ledger.db.pendingPosts, row)
     Ledger:Debug("Post captured: " .. row.item .. " x" .. row.qty .. ", deposit " .. VA:FormatCoins(row.deposit))
 end
 
 function Economics:ConfirmBid()
-    local row = table.remove(self.bidCalls, 1)
+    local row = VA:ArrayRemove(self.bidCalls, 1)
     if not row then return end
-    tinsert(Ledger.db.pendingBids, row)
+    VA:ArrayPush(Ledger.db.pendingBids, row)
     Ledger:Debug("Bid captured: " .. row.item .. " x" .. row.qty .. " for " .. VA:FormatCoins(row.cost))
 end
 
-function Economics:RejectPost() table.remove(self.postCalls, 1) end
-function Economics:RejectBid() table.remove(self.bidCalls, 1) end
+function Economics:RejectPost() VA:ArrayRemove(self.postCalls, 1) end
+function Economics:RejectBid() VA:ArrayRemove(self.bidCalls, 1) end
 
 function Economics:AddCostLot(item, qty, totalCost, timestamp)
     if not item or not totalCost or totalCost <= 0 then return end
-    tinsert(Ledger.db.costLots, { item = item, qty = max(1, qty or 1), cost = totalCost, t = timestamp or time() })
+    VA:ArrayPush(Ledger.db.costLots, { item = item, qty = max(1, qty or 1), cost = totalCost, t = timestamp or time() })
 end
 
 function Economics:ConsumeCost(item, requestedQty)
@@ -66,7 +66,7 @@ function Economics:ConsumeCost(item, requestedQty)
             needed = needed - take
             lot.qty = lot.qty - take
             lot.cost = max(0, lot.cost - unitCost * take)
-            if lot.qty <= 0 then table.remove(Ledger.db.costLots, index) else index = index + 1 end
+            if lot.qty <= 0 then VA:ArrayRemove(Ledger.db.costLots, index) else index = index + 1 end
         else
             index = index + 1
         end
@@ -141,7 +141,7 @@ if originalStartAuction then
         local item, _, count = GetAuctionSellItemInfo()
         if item and count then
             local deposit = CalculateAuctionDeposit and CalculateAuctionDeposit(runTime) or 0
-            tinsert(Economics.postCalls, { item = item, qty = count, minBid = minBid, buyout = buyoutPrice, duration = runTime, deposit = deposit or 0, t = time() })
+            VA:ArrayPush(Economics.postCalls, { item = item, qty = count, minBid = minBid, buyout = buyoutPrice, duration = runTime, deposit = deposit or 0, t = time() })
         end
         return originalStartAuction(minBid, buyoutPrice, runTime)
     end
@@ -152,7 +152,7 @@ if originalPlaceAuctionBid then
     function PlaceAuctionBid(listType, index, bid)
         local item, _, count, _, _, _, _, _, buyoutPrice = GetAuctionItemInfo(listType, index)
         if item and count and bid then
-            tinsert(Economics.bidCalls, { item = item, qty = count, cost = bid, buyout = buyoutPrice and bid == buyoutPrice, t = time() })
+            VA:ArrayPush(Economics.bidCalls, { item = item, qty = count, cost = bid, buyout = buyoutPrice and bid == buyoutPrice, t = time() })
         end
         return originalPlaceAuctionBid(listType, index, bid)
     end

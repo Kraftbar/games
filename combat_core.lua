@@ -93,6 +93,19 @@ function Combat:GetSnapshot()
     }
 end
 
+function Combat:UpdateTargetEstimate()
+    if not UnitExists("target") then
+        self.current.target = nil
+        self.current.timeToTargetDeath = 0
+        return
+    end
+    self.current.target = UnitName("target")
+    local elapsed = self:GetElapsed()
+    local dps = elapsed > 0 and (self.current.damageDealt or 0) / elapsed or 0
+    local health = UnitHealth("target") or 0
+    self.current.timeToTargetDeath = health > 0 and dps > 0 and health / dps or 0
+end
+
 function Combat:End()
     if not self.inCombat then return end
     local snapshot = self:GetSnapshot()
@@ -101,9 +114,9 @@ function Combat:End()
     snapshot.endedAt = time()
     if snapshot.elapsed >= 1 or snapshot.damageDealt > 0 or snapshot.damageTaken > 0 then
         local history = VA.db.combatHistory
-        tinsert(history, snapshot)
+        VA:ArrayPush(history, snapshot)
         local limit = tonumber(VA.settings.combat.historyLimit or 20) or 20
-        while VA:ArrayLen(history) > limit do table.remove(history, 1) end
+        while VA:ArrayLen(history) > limit do VA:ArrayRemove(history, 1) end
     end
     VA:Emit("COMBAT_ENDED", snapshot)
     VA:Diag("combat", format("Ended: %.1fs, %.1f DPS, %.1f DTPS", snapshot.elapsed, snapshot.dps, snapshot.dtps))
@@ -170,6 +183,13 @@ function Combat:GetRecent()
     return total / self.recentWindow, count, attackers
 end
 
+function Combat:UpdatePlayerEstimate()
+    local dtps, attackers = self:GetRecent()
+    local health = UnitHealth("player") or 0
+    self.current.timeToPlayerDeath = health > 0 and dtps > 0 and health / dtps or 0
+    return dtps, attackers, health
+end
+
 function Combat:HandleDamage(eventName, message)
     if not self.inCombat then self:Start() end
     local amount, source
@@ -178,29 +198,27 @@ function Combat:HandleDamage(eventName, message)
         if amount then
             self.current.damageDealt = self.current.damageDealt + amount
             self.current.attacksDealt = self.current.attacksDealt + 1
-            local elapsed = self:GetElapsed()
-            local dps = elapsed > 0 and self.current.damageDealt / elapsed or 0
-            if UnitExists("target") then
-                local health = UnitHealth("target") or 0
-                self.current.timeToTargetDeath = dps > 0 and health / dps or 0
-            end
         end
     elseif incomingEvents[eventName] then
         amount, source = parseIncoming(message, eventName)
         if amount then
             self.current.damageTaken = self.current.damageTaken + amount
             self.current.hitsTaken = self.current.hitsTaken + 1
-            tinsert(self.recentTaken, { clock = GetTime(), amount = amount, source = source })
-            local dtps = self:GetRecent()
-            local health = UnitHealth("player") or 0
-            self.current.timeToPlayerDeath = dtps > 0 and health / dtps or 0
+            VA:ArrayPush(self.recentTaken, { clock = GetTime(), amount = amount, source = source })
         end
     end
     if not amount then
         VA:Diag("combat-unparsed", eventName .. " | " .. tostring(message))
         return
     end
+    self:UpdateTargetEstimate()
+    local recentDtps, recentAttackers, playerHealth = self:UpdatePlayerEstimate()
     syncCompatibility()
+    VA:Diag("combat-event", format("%s amount=%d source=%s target=%s targetHP=%d targetTTD=%.2f playerHP=%d recentDTPS=%.2f attackers=%d playerTTD=%.2f",
+        eventName, amount, tostring(source or "-"), tostring(self.current.target or "-"),
+        UnitExists("target") and (UnitHealth("target") or 0) or 0,
+        self.current.timeToTargetDeath or 0, playerHealth, recentDtps, recentAttackers,
+        self.current.timeToPlayerDeath or 0))
     VA:Emit("COMBAT_UPDATED", { event = eventName, amount = amount, source = source, snapshot = self:GetSnapshot() })
 end
 
@@ -213,11 +231,21 @@ for eventName in pairs(outgoingEvents) do combatFrame:RegisterEvent(eventName) e
 for eventName in pairs(incomingEvents) do combatFrame:RegisterEvent(eventName) end
 combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+combatFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 combatFrame:SetScript("OnEvent", function()
     if event == "PLAYER_REGEN_DISABLED" then
         Combat:Start()
     elseif event == "PLAYER_REGEN_ENABLED" then
         Combat:End()
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        if Combat.inCombat then
+            Combat:UpdateTargetEstimate()
+            syncCompatibility()
+            VA:Diag("combat-target", format("target=%s hp=%d targetTTD=%.2f dealt=%d elapsed=%.2f",
+                tostring(Combat.current.target or "-"), UnitExists("target") and (UnitHealth("target") or 0) or 0,
+                Combat.current.timeToTargetDeath or 0, Combat.current.damageDealt or 0, Combat:GetElapsed()))
+            VA:Emit("COMBAT_ESTIMATE_UPDATED", { snapshot = Combat:GetSnapshot() })
+        end
     else
         Combat:HandleDamage(event, arg1 or "")
     end

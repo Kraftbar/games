@@ -68,6 +68,22 @@ function VA:ArrayLen(value)
     return count
 end
 
+function VA:ArrayPush(value, item)
+    local index = self:ArrayLen(value) + 1
+    value[index] = item
+    return index
+end
+
+function VA:ArrayRemove(value, index)
+    local count = self:ArrayLen(value)
+    index = index or count
+    if index < 1 or index > count then return nil end
+    local removed = value[index]
+    for i = index, count - 1 do value[i] = value[i + 1] end
+    value[count] = nil
+    return removed
+end
+
 function VA:Round(value, places)
     local mult = 10 ^ (places or 0)
     return floor((value or 0) * mult + 0.5) / mult
@@ -96,7 +112,7 @@ end
 
 function VA:On(signal, callback)
     self.listeners[signal] = self.listeners[signal] or {}
-    tinsert(self.listeners[signal], callback)
+    self:ArrayPush(self.listeners[signal], callback)
 end
 
 function VA:Emit(signal, payload)
@@ -111,13 +127,13 @@ function VA:Diag(category, message, force)
     self:EnsureDB()
     if not force and not self.settings.diagnostics.enabled then return end
     local rows = self.db.diagnostics
-    tinsert(rows, {
+    self:ArrayPush(rows, {
         t = time(),
         category = tostring(category or "general"),
         message = tostring(message or ""),
     })
     local limit = tonumber(self.settings.diagnostics.maxEntries or 250) or 250
-    while self:ArrayLen(rows) > limit do table.remove(rows, 1) end
+    while self:ArrayLen(rows) > limit do self:ArrayRemove(rows, 1) end
 end
 
 function VA:SaveFramePosition(key, frame)
@@ -233,8 +249,8 @@ do
             handling = true
             VA:EnsureDB()
             local line = format("%s %s", date("%Y-%m-%d %H:%M:%S"), tostring(message))
-            tinsert(VanillaLedgerErrors, line)
-            while VA:ArrayLen(VanillaLedgerErrors) > 200 do table.remove(VanillaLedgerErrors, 1) end
+            VA:ArrayPush(VanillaLedgerErrors, line)
+            while VA:ArrayLen(VanillaLedgerErrors) > 200 do VA:ArrayRemove(VanillaLedgerErrors, 1) end
             VA:Diag("lua-error", tostring(message), true)
             handling = false
         end

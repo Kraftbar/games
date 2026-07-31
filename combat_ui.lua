@@ -60,10 +60,19 @@ function UI:SetVisible(visible)
 end
 
 function UI:UpdateDeath(snapshot, attackers)
-    addMessage(self.death, format("Target: %.1fs / Me: %.1fs%s",
-        snapshot.timeToTargetDeath or 0,
-        snapshot.timeToPlayerDeath or 0,
+    local function estimate(value)
+        if value and value > 0 then return format("%.1fs", value) end
+        return "--"
+    end
+    addMessage(self.death, format("Target: %s / Me: %s%s",
+        estimate(snapshot.timeToTargetDeath),
+        estimate(snapshot.timeToPlayerDeath),
         attackers and attackers > 1 and (" [" .. attackers .. " attackers]") or ""))
+end
+
+local function updateEstimate(snapshot)
+    local _, attackers = VA.Combat:GetRecent()
+    UI:UpdateDeath(snapshot, attackers)
 end
 
 VA:On("COMBAT_UPDATED", function(payload)
@@ -74,15 +83,16 @@ VA:On("COMBAT_UPDATED", function(payload)
     else
         addMessage(UI.info, format("Dealt: %d | DPS: %.1f", payload.amount, snapshot.dps))
     end
-    local _, attackers = VA.Combat:GetRecent()
-    UI:UpdateDeath(snapshot, attackers)
+    updateEstimate(snapshot)
 end)
+
+VA:On("COMBAT_ESTIMATE_UPDATED", function(payload) updateEstimate(payload.snapshot) end)
 
 VA:On("COMBAT_ENDED", function(snapshot)
     UI:CreateWindows()
     addMessage(UI.stats, format("%.1fs | Dealt %d (%.1f DPS) | Taken %d (%.1f DTPS)",
         snapshot.elapsed, snapshot.damageDealt, snapshot.dps, snapshot.damageTaken, snapshot.dtps))
-    addMessage(UI.death, "Target: 0.0s / Me: 0.0s")
+    addMessage(UI.death, "Target: -- / Me: --")
     if UI.historyFrame and UI.historyFrame:IsShown() then UI:RefreshHistory() end
 end)
 

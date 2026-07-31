@@ -47,9 +47,10 @@ function CreateFrame(_, name, parent, template)
 end
 function getglobal(name) return _G[name] end
 function GetTime() return os.clock() + 100 end
-function UnitName(unit) if unit == "player" then return "Tester" end return "Target" end
+local targetName, targetHealth = "Target", 500
+function UnitName(unit) if unit == "player" then return "Tester" end return targetName end
 function UnitClass() return "Warrior", "WARRIOR" end
-function UnitHealth() return 500 end
+function UnitHealth(unit) if unit == "target" then return targetHealth end return 500 end
 function UnitHealthMax() return 1000 end
 function UnitExists() return true end
 function UnitAffectingCombat() return true end
@@ -93,6 +94,12 @@ local files = {
 }
 for _, filename in ipairs(files) do assert(loadfile(filename))() end
 
+local compactArray = { "old", "keep" }
+compactArray[2] = nil
+VanillaAddon:ArrayPush(compactArray, "new")
+assert(compactArray[1] == "old" and compactArray[2] == "new", "array append left a gap")
+assert(VanillaAddon:ArrayRemove(compactArray, 1) == "old" and compactArray[1] == "new", "array removal did not compact")
+
 local function fire(eventName, message)
     event, arg1 = eventName, message
     for _, frame in ipairs(frames) do
@@ -104,6 +111,10 @@ fire("VARIABLES_LOADED")
 fire("PLAYER_LOGIN")
 fire("PLAYER_REGEN_DISABLED")
 fire("CHAT_MSG_COMBAT_SELF_HITS", "You hit Wolf for 40.")
+targetName, targetHealth = "Second Target", 1000
+fire("PLAYER_TARGET_CHANGED")
+assert(VanillaAddon.Combat.current.target == "Second Target", "target switch was not tracked")
+assert(VanillaAddon.Combat.current.timeToTargetDeath > 0, "target switch left a zero death estimate")
 fire("CHAT_MSG_SPELL_PERIODIC_CREATURE_DAMAGE", "Wolf suffers 12 Fire damage from your Fireball.")
 fire("CHAT_MSG_COMBAT_CREATURE_VS_SELF_HITS", "Wolf hits you for 20.")
 fire("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE", "You suffer 5 damage from Scorpid's Poison.")

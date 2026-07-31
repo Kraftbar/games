@@ -55,7 +55,7 @@ function Ledger:Add(bucket, row)
     if VA.LedgerEconomics and VA.LedgerEconomics.Enrich then
         VA.LedgerEconomics:Enrich(bucket, row)
     end
-    tinsert(self.db[bucket], row)
+    VA:ArrayPush(self.db[bucket], row)
     trimHead(self.db[bucket], self.maxRows)
     VA:Emit("LEDGER_UPDATED", { bucket = bucket, row = row })
     return row
