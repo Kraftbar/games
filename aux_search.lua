@@ -381,7 +381,6 @@ function AuxFind_Run(query)
     if (is_id and tonumber(id) == is_id) or (not is_id and has_all_tokens(name, query)) then
       n = n + 1
       found[n] = { name = name, id = id }
-      if n >= 50 then break end
     end
   end
   if n == 0 then
@@ -392,7 +391,8 @@ function AuxFind_Run(query)
   table.sort(found, function(a, b) return a.name < b.name end)
   local rows = {}
   local shown = 0
-  for i = 1, n do
+  local limit = min(n, 50)
+  for i = 1, limit do
     local it = found[i]
     local priceText = price_for_id(it.id)
     shown = shown + 1
@@ -401,7 +401,9 @@ function AuxFind_Run(query)
   if shown == 0 then
     AuxFind_DisplayMessage("|cffffff00[AuxFind]|r No matches for: " .. query)
   else
-    AuxFind_DisplayRows(rows, "|cffffff00[AuxFind]|r Results for '" .. query .. "' (" .. tostring(shown) .. ")")
+    local countText = tostring(shown)
+    if n > shown then countText = countText .. " of " .. tostring(n) end
+    AuxFind_DisplayRows(rows, "|cffffff00[AuxFind]|r Results for '" .. query .. "' (" .. countText .. ")")
   end
 end
 

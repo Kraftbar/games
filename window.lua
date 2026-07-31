@@ -90,7 +90,9 @@ local infoWindow = CreateMessageWindow("CombatInfoWindow", CombatStats.config.wi
 -- Combat state management
 local inCombat = false
 local function UpdateCombatState()
-    local newState = UnitAffectingCombat("player") or UnitAffectingCombat("target")
+    -- Encounter boundaries must follow the player. A selected target can remain
+    -- in combat with somebody else before or after our own encounter.
+    local newState = UnitAffectingCombat("player")
     if newState and not inCombat then
         inCombat = true
         CombatStats.data.combatStart = GetTime()
@@ -129,8 +131,23 @@ local function ParseCombatMessage(event, message)
 
     -- Extract damage value
     local damage = nil
-    local startPos, endPos = string.find(message, "%d+")
-    if startPos and endPos then
+    local startPos, endPos
+    if event == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" then
+        -- This event also carries non-damaging debuffs, which may contain rank
+        -- numbers. Only the explicit periodic-damage format is damage.
+        startPos, endPos = string.find(message, "^[Yy]ou suffer%s+(%d+)")
+        if startPos and endPos then
+            local _, _, amount = string.find(message, "^[Yy]ou suffer%s+(%d+)")
+            damage = tonumber(amount)
+        end
+    elseif event == "CHAT_MSG_SPELL_PERIODIC_CREATURE_DAMAGE"
+        or event == "CHAT_MSG_SPELL_PERIODIC_HOSTILEPLAYER_DAMAGE" then
+        local _, _, amount = string.find(message, " suffers%s+(%d+)")
+        damage = tonumber(amount)
+    else
+        startPos, endPos = string.find(message, "%d+")
+    end
+    if not damage and startPos and endPos then
         damage = tonumber(string.sub(message, startPos, endPos))
     end
     if not damage then
@@ -145,7 +162,11 @@ local function ParseCombatMessage(event, message)
     local elapsed = time - CombatStats.data.combatStart
 
     -- Damage dealt
-    if event == "CHAT_MSG_COMBAT_SELF_HITS" or event == "CHAT_MSG_SPELL_SELF_DAMAGE" or event == "CHAT_MSG_COMBAT_SELF_CRITS" then
+    if event == "CHAT_MSG_COMBAT_SELF_HITS"
+        or event == "CHAT_MSG_SPELL_SELF_DAMAGE"
+        or event == "CHAT_MSG_COMBAT_SELF_CRITS"
+        or event == "CHAT_MSG_SPELL_PERIODIC_CREATURE_DAMAGE"
+        or event == "CHAT_MSG_SPELL_PERIODIC_HOSTILEPLAYER_DAMAGE" then
         CombatStats.data.damageDealt = CombatStats.data.damageDealt + damage
         CombatStats.data.attacksDealt = CombatStats.data.attacksDealt + 1
         local dps = elapsed > 0 and Round(CombatStats.data.damageDealt / elapsed, 1) or 0
@@ -159,7 +180,9 @@ local function ParseCombatMessage(event, message)
         end
 
     -- Damage taken
-    elseif event == "CHAT_MSG_COMBAT_CREATURE_VS_SELF_HITS" or event == "CHAT_MSG_SPELL_CREATURE_VS_SELF_DAMAGE" then
+    elseif event == "CHAT_MSG_COMBAT_CREATURE_VS_SELF_HITS"
+        or event == "CHAT_MSG_SPELL_CREATURE_VS_SELF_DAMAGE"
+        or event == "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" then
         CombatStats.data.damageTaken = CombatStats.data.damageTaken + damage
         -- Prefer recent-window DTPS (multi-mob aware) if available, fallback to long average
         local dtpsLong = elapsed > 0 and (CombatStats.data.damageTaken / elapsed) or 0
@@ -375,7 +398,6 @@ SlashCmdList["AUXFIND"] = function(msg)
                 if (idq and tonumber(id) == idq) or (not idq and has_all_tokens(name, query)) then
                     n = n + 1
                     hits[n] = { name = name, id = id }
-                    if n >= 50 then break end
                 end
             end
             if n == 0 then
@@ -383,11 +405,6 @@ SlashCmdList["AUXFIND"] = function(msg)
                 return
             end
             table.sort(hits, function(a, b) return a.name < b.name end)
-            local function arrlen(t)
-                if getn then return getn(t) end
-                if table and table.getn then return table.getn(t) end
-                local n = 0; for _ in pairs(t) do n = n + 1 end; return n
-            end
             local function arrlen(t)
                 if getn then return getn(t) end
                 if table and table.getn then return table.getn(t) end
@@ -488,8 +505,11 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("CHAT_MSG_COMBAT_SELF_HITS")
 eventFrame:RegisterEvent("CHAT_MSG_SPELL_SELF_DAMAGE")
 eventFrame:RegisterEvent("CHAT_MSG_COMBAT_SELF_CRITS")
+eventFrame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_CREATURE_DAMAGE")
+eventFrame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_HOSTILEPLAYER_DAMAGE")
 eventFrame:RegisterEvent("CHAT_MSG_COMBAT_CREATURE_VS_SELF_HITS")
 eventFrame:RegisterEvent("CHAT_MSG_SPELL_CREATURE_VS_SELF_DAMAGE")
+eventFrame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
@@ -507,9 +527,12 @@ eventFrame:SetScript("OnEvent", function()
         end
         -- Enable mouse wheel scrolling on standard chat window
         DEFAULT_CHAT_FRAME:EnableMouseWheel(true)
-        DEFAULT_CHAT_FRAME:SetScript("OnMouseWheel", function()
-            if arg1 > 0 then DEFAULT_CHAT_FRAME:ScrollUp() else DEFAULT_CHAT_FRAME:ScrollDown() end
-        end)
+        -- Do not replace a handler installed by the default UI or another addon.
+        if not DEFAULT_CHAT_FRAME:GetScript("OnMouseWheel") then
+            DEFAULT_CHAT_FRAME:SetScript("OnMouseWheel", function()
+                if arg1 > 0 then DEFAULT_CHAT_FRAME:ScrollUp() else DEFAULT_CHAT_FRAME:ScrollDown() end
+            end)
+        end
         -- Re-register AuxFind slashes on login to be safe
         SLASH_AUXFIND1 = "/auxfind"; SLASH_AUXFIND2 = "/afind"; SLASH_VANFIND1 = "/vanfind"
         SlashCmdList["VANFIND"] = SlashCmdList["VANFIND"] or function(msg) SlashCmdList["AUXFIND"](msg) end

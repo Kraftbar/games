@@ -295,40 +295,54 @@ local function scanInbox()
         subject = subject or ""
         sender = sender or ""
         money = money or 0
-        -- BeanCounter-style guard: process unread mail only.
-        if not wasRead then
-            local entryType, subjectItem = classifyAuctionSubject(subject)
-            if entryType then
-                local trustSender, senderReason = shouldTrustAuctionMailSender(sender, stationeryIcon)
-                if trustSender then
-                    local deliveredAt = inboxDeliveryTimestamp(daysLeft)
-                    local sig = stableMailSig(subject, money, sender, deliveredAt, CODAmount, hasItem)
-                    local p = present[sig]
-                    if not p then
-                        p = { count = 0, entryType = entryType, item = subjectItem, money = money,
-                              deliveredAt = deliveredAt, index = i, hasItem = hasItem, reason = senderReason }
-                        present[sig] = p
-                    end
-                    p.count = p.count + 1
-                else
-                    debugPrint("Inbox(" .. tostring(i) .. ") ignored non-AH sender '" .. tostring(sender) .. "' for auction-like subject.")
+        local entryType, subjectItem = classifyAuctionSubject(subject)
+        if entryType then
+            local trustSender, senderReason = shouldTrustAuctionMailSender(sender, stationeryIcon)
+            if trustSender then
+                local deliveredAt = inboxDeliveryTimestamp(daysLeft)
+                local sig = stableMailSig(subject, money, sender, deliveredAt, CODAmount, hasItem)
+                local p = present[sig]
+                if not p then
+                    p = { count = 0, unreadCount = 0, entryType = entryType, item = subjectItem, money = money,
+                          deliveredAt = deliveredAt, index = i, hasItem = hasItem, reason = senderReason }
+                    present[sig] = p
                 end
+                -- Track every matching message so the saved count can shrink
+                -- when one is collected. Only unread messages are new records.
+                p.count = p.count + 1
+                if not wasRead then
+                    p.unreadCount = p.unreadCount + 1
+                    p.index = i
+                end
+            else
+                debugPrint("Inbox(" .. tostring(i) .. ") ignored non-AH sender '" .. tostring(sender) .. "' for auction-like subject.")
             end
         end
     end
     for sig, p in pairs(present) do
         local seen = seenMailCount(sig)
-        if p.count > seen then
+        -- mailSeen represents recorded messages that are still in the inbox,
+        -- not a lifetime high-water mark. Let it fall as messages disappear so
+        -- a later identical auction mail can be recorded.
+        if seen > p.count then seen = p.count end
+        local toRecord = p.count - seen
+        if toRecord > (p.unreadCount or 0) then toRecord = p.unreadCount or 0 end
+        if toRecord > 0 then
             local itemName, itemCount = nil, 1
             if p.hasItem then
                 itemName, itemCount = safeInboxItem(p.index)
             end
-            for r = 1, p.count - seen do
+            for r = 1, toRecord do
                 recordMailEntry(p.entryType, itemName or p.item, itemCount or 1, p.deliveredAt, p.money, p.reason)
             end
-            seen = p.count
+            seen = seen + toRecord
         end
         VanillaLedgerDB.mailSeen[sig] = { n = seen, t = p.deliveredAt }
+    end
+    -- A full inbox update proves these signatures are no longer present.
+    -- Clearing them permits a future identical mail in the same time bucket.
+    for sig in pairs(VanillaLedgerDB.mailSeen) do
+        if not present[sig] then VanillaLedgerDB.mailSeen[sig] = nil end
     end
 end
 

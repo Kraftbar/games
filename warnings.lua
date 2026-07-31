@@ -99,7 +99,7 @@ end
 
 local function MaybeWarnLowTTD()
   if not CombatStats or not CombatStats.config or not CombatStats.config.warnEnabled then return end
-  if not (UnitAffectingCombat("player") or UnitAffectingCombat("target")) then return end
+  if not UnitAffectingCombat("player") then return end
   local now = GetTime()
   if (now - (lastWarnAt or 0)) < (CombatStats.config.warnCooldown or 8.0) then return end
 
@@ -119,6 +119,7 @@ local warnFrame = CreateFrame("Frame")
 warnFrame:RegisterEvent("PLAYER_LOGIN")
 warnFrame:RegisterEvent("CHAT_MSG_COMBAT_CREATURE_VS_SELF_HITS")
 warnFrame:RegisterEvent("CHAT_MSG_SPELL_CREATURE_VS_SELF_DAMAGE")
+warnFrame:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
 warnFrame:SetScript("OnEvent", function()
   ensure_warn_config()
   if event == "PLAYER_LOGIN" then
@@ -128,17 +129,30 @@ warnFrame:SetScript("OnEvent", function()
     local msg = arg1
     if type(msg) == "string" then
       -- Parse damage events to build short-window DTPS and attacker set
-      -- Examples: "Wolf hits You for 12." / "Murloc Raider crits You for 35."
-      -- Spells: "Defias Wizard's Fireball hits You for 37 Fire damage."
+      -- Examples: "Wolf hits you for 12." / "Murloc Raider crits you for 35."
+      -- Spells: "Defias Wizard's Fireball hits you for 37 Fire damage."
       local src, dmg
       -- Spell with possessive
-      _, _, src, dmg = string.find(msg, "^(.+)'s .- hits You for (%d+)")
-      if not src then _, _, src, dmg = string.find(msg, "^(.+)'s .- crits You for (%d+)") end
+      _, _, src, dmg = string.find(msg, "^(.+)'s .- hits [Yy]ou for (%d+)")
+      if not src then _, _, src, dmg = string.find(msg, "^(.+)'s .- crits [Yy]ou for (%d+)") end
       -- Melee without possessive
-      if not src then _, _, src, dmg = string.find(msg, "^(.+) hits You for (%d+)") end
-      if not src then _, _, src, dmg = string.find(msg, "^(.+) crits You for (%d+)") end
+      if not src then _, _, src, dmg = string.find(msg, "^(.+) hits [Yy]ou for (%d+)") end
+      if not src then _, _, src, dmg = string.find(msg, "^(.+) crits [Yy]ou for (%d+)") end
+      -- Periodic damage: "You suffer 3 damage from Scorpid's Poison."
+      if not dmg then
+        local periodicDmg, periodicSrc
+        _, _, periodicDmg, periodicSrc = string.find(msg, "^[Yy]ou suffer (%d+) .- from (.+)")
+        if periodicDmg then
+          dmg = periodicDmg
+          src = gsub(periodicSrc or "", "%.$", "")
+        end
+      end
       -- Fallback: just number
-      if not dmg then _, _, dmg = string.find(msg, "(%d+)") end
+      -- PERIODIC_SELF_DAMAGE also carries non-damaging debuffs with rank
+      -- numbers, so those must not use the generic numeric fallback.
+      if not dmg and event ~= "CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE" then
+        _, _, dmg = string.find(msg, "(%d+)")
+      end
       if dmg then addRecent(tonumber(dmg) or 0, src) end
     end
   end
