@@ -165,6 +165,12 @@ fire("CHAT_MSG_SYSTEM", ERR_AUCTION_STARTED)
 fire("CHAT_MSG_SYSTEM", "Your auction of Rough Stone has expired.")
 local expired = VanillaLedgerDB.expired[#VanillaLedgerDB.expired]
 assert(expired.depositLost == 60 and expired.qty == 3, "expired deposit economics were not calculated")
+VanillaAddon.LedgerUI:Create()
+assert(not VanillaAddon.LedgerUI.frame:IsShown(), "ledger frame should start hidden")
+VanillaAddon.LedgerUI:Toggle()
+assert(VanillaAddon.LedgerUI.frame:IsShown(), "first ledger toggle did not show the frame")
+VanillaAddon.LedgerUI:Toggle()
+assert(not VanillaAddon.LedgerUI.frame:IsShown(), "second ledger toggle did not hide the frame")
 SlashCmdList["LEDGER"]("ui")
 SlashCmdList["COMBATSTATS"]("history")
 for _, frame in ipairs(frames) do if frame._scripts.OnUpdate then this = frame; frame._scripts.OnUpdate() end end

@@ -31,6 +31,7 @@ function UI:Create()
     frame:SetBackdropColor(0, 0, 0, 0.96)
     VA:ApplyFramePosition("ledger", frame, "CENTER", 0, 0)
     VA:MakeMovable(frame, "ledger")
+    frame:Hide()
     self.frame = frame
 
     local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
