@@ -109,6 +109,13 @@ end
 
 fire("VARIABLES_LOADED")
 fire("PLAYER_LOGIN")
+assert(CombatHistoryMinimapButton, "combat history minimap button was not created")
+CombatHistoryMinimapButton._scripts.OnClick()
+assert(CombatHistoryFrame and CombatHistoryFrame:IsShown(), "combat history minimap button did not open history")
+assert(VanillaAddon.CombatUI.historyRows[1].cells.when,
+    "combat history did not create aligned table cells")
+CombatHistoryMinimapButton._scripts.OnClick()
+assert(not CombatHistoryFrame:IsShown(), "combat history minimap button did not close history")
 fire("PLAYER_REGEN_DISABLED")
 fire("CHAT_MSG_COMBAT_SELF_HITS", "You hit Wolf for 40.")
 targetName, targetHealth = "Second Target", 1000
@@ -184,6 +191,8 @@ VanillaAddon.LedgerUI:Toggle()
 assert(not VanillaAddon.LedgerUI.frame:IsShown(), "second ledger toggle did not hide the frame")
 SlashCmdList["LEDGER"]("ui")
 SlashCmdList["COMBATSTATS"]("history")
+assert(strlen(VanillaAddon.CombatUI.historyRows[1].cells.when._text) == 19,
+    "combat history timestamp lost precision")
 for _, frame in ipairs(frames) do if frame._scripts.OnUpdate then this = frame; frame._scripts.OnUpdate() end end
 assert(VanillaAddon:FormatCoins(-60) == "-0g 0s 60c", "negative coin formatting failed")
 print("runtime smoke test: ok")

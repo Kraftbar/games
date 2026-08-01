@@ -8,7 +8,7 @@ Modules are loaded in `vanilla-addon.toc`. Optional functionality can be removed
 
 - `vanilla_core.lua` — saved settings, diagnostics, module events, and frame-position persistence. Required.
 - `combat_core.lua` — damage collection and persistent encounter history. Independent of the UI.
-- `combat_ui.lua` — live combat windows and history window. Optional.
+- `combat_ui.lua` — live combat windows, history window, and minimap button. Optional.
 - `combat_warnings.lua` — low-HP/time-to-death alerts. Optional; requires combat core.
 - `player_features.lua` — character/class-specific Crazyforg and Paladin conveniences. Optional.
 - `ledger_core.lua` — ledger storage, summaries, views, and commands. Required by other ledger modules.
@@ -57,6 +57,7 @@ After updating the addon, use `/reload`, then check:
 
 1. Direct and periodic damage update the combat windows.
 2. `/combatstats history` shows a completed encounter.
+   The book icon on the minimap also toggles this window and can be dragged to a new position.
 3. `/ledger ui` opens existing ledger data.
 4. Posting, buying, selling, and expiring a small auction updates `/ledger economics`.
 5. `/auxfind` supports live debounced text search, min/max gold, cached-only filtering, and header sorting.
