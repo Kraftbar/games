@@ -1,0 +1,5 @@
+## Author: Caat
+## Interface: 11302
+## Title: Caats Emote Button Leiste Classic
+## Version: Classic
+Frame.xml

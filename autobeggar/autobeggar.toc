@@ -1,0 +1,7 @@
+## Interface: 11302
+## Title: autobegger
+## Author: Gaute_Nybo
+## Version: 0.1
+autobeggar.lua
+
+

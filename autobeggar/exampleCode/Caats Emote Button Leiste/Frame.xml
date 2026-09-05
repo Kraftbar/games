@@ -1,0 +1,569 @@
+﻿<Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Frame.lua" />
+	<Frame name="Gruppe1" parent="UIParent" toplevel="true" movable="true" enableMouse="true">
+		<Size>
+			<AbsDimension x="1240" y="34" />
+		</Size>
+		<Anchors>
+			<Anchor point="CENTER">
+				<Offset x="-139" y="146" />
+			</Anchor>
+		</Anchors>
+		<Backdrop bgFile="" edgeFile="" tile="true">
+			<BackgroundInsets>
+				<AbsInset left="11" right="12" top="12" bottom="11" />
+			</BackgroundInsets>
+			<TileSize>
+				<AbsValue val="20" />
+			</TileSize>
+			<EdgeSize>
+				<AbsValue val="20" />
+			</EdgeSize>
+		</Backdrop>
+		<Frames>
+			<Button name="Button1" inherits="UIPanelButtonTemplate" text="Hi">
+				<Size>
+					<AbsDimension x="25" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="3" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button1_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button2" inherits="UIPanelButtonTemplate" text="Wink">
+				<Size>
+					<AbsDimension x="40" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="27" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button2_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button3" inherits="UIPanelButtonTemplate" text="Bye">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="66" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button3_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button4" inherits="UIPanelButtonTemplate" text="Thx">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="95" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button4_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button5" inherits="UIPanelButtonTemplate" text="Sry">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="124" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button5_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button6" inherits="UIPanelButtonTemplate" text="Ja">
+				<Size>
+					<AbsDimension x="23" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="153" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button6_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button7" inherits="UIPanelButtonTemplate" text="Nein">
+				<Size>
+					<AbsDimension x="35" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="175" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button7_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			
+			
+			
+			<Button name="Button36" inherits="UIPanelButtonTemplate" text="Love">
+				<Size>
+					<AbsDimension x="36" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="229" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button36_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button20" inherits="UIPanelButtonTemplate" text="Kuss">
+				<Size>
+					<AbsDimension x="36" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="264" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button20_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button21" inherits="UIPanelButtonTemplate" text="Hug">
+				<Size>
+					<AbsDimension x="36" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="299" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button21_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button34" inherits="UIPanelButtonTemplate" text="Pet">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="334" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button34_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button22" inherits="UIPanelButtonTemplate" text="Cuddle">
+				<Size>
+					<AbsDimension x="51" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="363" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button22_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button23" inherits="UIPanelButtonTemplate" text="Shy">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="413" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button23_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button25" inherits="UIPanelButtonTemplate" text="Cry">
+				<Size>
+					<AbsDimension x="28" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="442" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button25_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button26" inherits="UIPanelButtonTemplate" text="Lick">
+				<Size>
+					<AbsDimension x="33" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="469" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button26_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button35" inherits="UIPanelButtonTemplate" text="Knurr">
+				<Size>
+					<AbsDimension x="41" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="501" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button35_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button27" inherits="UIPanelButtonTemplate" text="Bite">
+				<Size>
+					<AbsDimension x="30" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="541" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button27_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button28" inherits="UIPanelButtonTemplate" text="Trösten">
+				<Size>
+					<AbsDimension x="53" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="570" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button28_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button30" inherits="UIPanelButtonTemplate" text="Ruhig">
+				<Size>
+					<AbsDimension x="42" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="622" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button30_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button33" inherits="UIPanelButtonTemplate" text="Seufz">
+				<Size>
+					<AbsDimension x="42" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="663" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button33_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button40" inherits="UIPanelButtonTemplate" text="Appl">
+				<Size>
+					<AbsDimension x="35" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="724" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button40_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button42" inherits="UIPanelButtonTemplate" text="Cheer">
+				<Size>
+					<AbsDimension x="43" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="758" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button42_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button45" inherits="UIPanelButtonTemplate" text="Kicher">
+				<Size>
+					<AbsDimension x="45" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="800" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button45_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button46" inherits="UIPanelButtonTemplate" text="Tanz">
+				<Size>
+					<AbsDimension x="35" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="844" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button46_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button47" inherits="UIPanelButtonTemplate" text="Zappeln">
+				<Size>
+					<AbsDimension x="56" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="878" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button47_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button48" inherits="UIPanelButtonTemplate" text="Müde">
+				<Size>
+					<AbsDimension x="42" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="933" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button48_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button62" inherits="UIPanelButtonTemplate" text="Furz">
+				<Size>
+					<AbsDimension x="32" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="994" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button62_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button63" inherits="UIPanelButtonTemplate" text="Trauer">
+				<Size>
+					<AbsDimension x="45" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="1025" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button63_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button68" inherits="UIPanelButtonTemplate" text="Gebet">
+				<Size>
+					<AbsDimension x="42" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="1069" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button68_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>			
+			<Button name="Button66" inherits="UIPanelButtonTemplate" text="Fail">
+				<Size>
+					<AbsDimension x="29" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="1110" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button66_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button67" inherits="UIPanelButtonTemplate" text="Spit">
+				<Size>
+					<AbsDimension x="38" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="1138" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button67_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="Button69" inherits="UIPanelButtonTemplate" text="Klatsch">
+				<Size>
+					<AbsDimension x="52" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="1175" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Button69_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForDrag("LeftButton");
+			</OnLoad>
+			<OnDragStart>
+				self:StartMoving();
+			</OnDragStart>
+			<OnDragStop>
+				self:StopMovingOrSizing();
+			</OnDragStop>
+		</Scripts>
+	</Frame>
+	<Frame name="Auswahl" parent="UIParent" toplevel="true" movable="true" enableMouse="true">
+		<Size>
+			<AbsDimension x="115" y="35" />
+		</Size>
+		<Anchors>
+			<Anchor point="CENTER">
+				<Offset x="-206" y="187" />
+			</Anchor>
+		</Anchors>
+		<Backdrop bgFile="" edgeFile="" tile="true">
+			<BackgroundInsets>
+				<AbsInset left="11" right="12" top="12" bottom="11" />
+			</BackgroundInsets>
+			<TileSize>
+				<AbsValue val="32" />
+			</TileSize>
+			<EdgeSize>
+				<AbsValue val="20" />
+			</EdgeSize>
+		</Backdrop>
+		<Frames>
+			<Button name="Leiste1" inherits="UIPanelButtonTemplate" text="On/Off">
+				<Size>
+					<AbsDimension x="50" y="23" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT">
+						<Offset x="3" y="-3" />
+					</Anchor>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						Leiste1_OnClick();
+					</OnClick>
+				</Scripts>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForDrag("LeftButton");
+			</OnLoad>
+			<OnDragStop>
+				self:StopMovingOrSizing();
+			</OnDragStop>
+			<OnDragStart>
+				self:StartMoving();
+			</OnDragStart>
+		</Scripts>
+	</Frame>
+</Ui>
