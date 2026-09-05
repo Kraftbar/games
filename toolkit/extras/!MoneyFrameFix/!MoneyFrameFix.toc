@@ -1,0 +1,7 @@
+## Interface: 11200
+## Title: !MoneyFrameFix
+## Notes: Fixes nil static money frames and records diagnostics. Loads first due to ! prefix.
+## Version: 1.0.0
+## SavedVariables: MoneyProbeDB
+
+moneyfix.lua
